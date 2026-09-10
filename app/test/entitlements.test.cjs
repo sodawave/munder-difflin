@@ -20,6 +20,7 @@ describe('entitlements', () => {
     const plan = effectivePlan(s, Date.now());
     assert.equal(plan, 'community');
     assert.equal(requirePro(plan, 'stapler'), false);
+    assert.equal(requirePro(plan, 'network', { networkEnabled: true }), false);
   });
 
   it('dev unlock forces pro', () => {
@@ -50,11 +51,12 @@ describe('entitlements', () => {
     assert.equal(effectivePlan(s, Date.parse('2026-02-01T00:00:00.000Z')), 'community');
   });
 
-  it('active trial allows stapler gate', () => {
+  it('active trial allows stapler gate but not network', () => {
     const now = Date.parse('2026-09-10T12:00:00.000Z');
     const s = startTrial(defaultEntitlementState('x'), now);
     const plan = effectivePlan(s, now);
     assert.equal(requirePro(plan, 'stapler'), true);
+    assert.equal(requirePro(plan, 'network', { networkEnabled: true }), false);
   });
 
   it('Refresh plan applies remote pro from license sim payload', () => {
@@ -64,7 +66,52 @@ describe('entitlements', () => {
     assert.equal(after.plan, 'pro');
     assert.equal(after.installId, 'install-a');
     assert.equal(after.lastRefreshAt, '2026-09-10T14:00:00.000Z');
+    assert.equal(after.networkEnabled, false);
     assert.equal(requirePro(effectivePlan(after, now), 'proShell'), true);
+  });
+
+  it('teams plan unlocks Pro features and network when enabled', () => {
+    const now = Date.parse('2026-09-10T14:00:00.000Z');
+    const after = applyRemoteEntitlement(
+      defaultEntitlementState('install-t'),
+      {
+        plan: 'teams',
+        trialEndsAt: null,
+        orgId: 'org_demo',
+        seatId: 'seat_1',
+        seatLabel: 'Ada',
+        networkEnabled: true,
+      },
+      now
+    );
+    assert.equal(after.plan, 'teams');
+    assert.equal(after.orgId, 'org_demo');
+    assert.equal(after.seatId, 'seat_1');
+    assert.equal(after.networkEnabled, true);
+    const plan = effectivePlan(after, now);
+    assert.equal(requirePro(plan, 'stapler'), true);
+    assert.equal(requirePro(plan, 'network', { networkEnabled: after.networkEnabled }), true);
+  });
+
+  it('revoking seat via community refresh clears org and network', () => {
+    const now = Date.parse('2026-09-10T15:00:00.000Z');
+    const teams = applyRemoteEntitlement(
+      defaultEntitlementState('install-t'),
+      { plan: 'teams', orgId: 'org_demo', seatId: 'seat_1', networkEnabled: true },
+      now
+    );
+    const revoked = applyRemoteEntitlement(teams, { plan: 'community', trialEndsAt: null }, now + 1);
+    assert.equal(revoked.plan, 'community');
+    assert.equal(revoked.orgId, null);
+    assert.equal(revoked.seatId, null);
+    assert.equal(revoked.networkEnabled, false);
+    assert.equal(requirePro(effectivePlan(revoked, now + 1), 'network', { networkEnabled: true }), false);
+  });
+
+  it('startTrial is a no-op on teams', () => {
+    const s = { ...defaultEntitlementState('x'), plan: 'teams', networkEnabled: true };
+    const again = startTrial(s, Date.now());
+    assert.equal(again.plan, 'teams');
   });
 
   it('entitlement URL allowlist permits https and loopback http only', () => {

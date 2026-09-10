@@ -10,11 +10,20 @@ function defaultEntitlementState(installId) {
     staplerEnabled: false,
     installId,
     lastRefreshAt: null,
+    orgId: null,
+    seatId: null,
+    seatLabel: null,
+    networkEnabled: false,
   };
+}
+
+function isPlanId(value) {
+  return value === 'community' || value === 'trial' || value === 'pro' || value === 'teams';
 }
 
 function effectivePlan(state, nowMs, opts = {}) {
   if (opts.devUnlock) return 'pro';
+  if (state.plan === 'teams') return 'teams';
   if (state.plan === 'pro') return 'pro';
   if (state.plan === 'trial' && state.trialEndsAt) {
     const end = Date.parse(state.trialEndsAt);
@@ -25,15 +34,16 @@ function effectivePlan(state, nowMs, opts = {}) {
 }
 
 function canUseProFeatures(plan) {
-  return plan === 'pro' || plan === 'trial';
+  return plan === 'pro' || plan === 'trial' || plan === 'teams';
 }
 
-function requirePro(plan, _feature) {
+function requirePro(plan, feature, opts = {}) {
+  if (feature === 'network') return plan === 'teams' && !!opts.networkEnabled;
   return canUseProFeatures(plan);
 }
 
 function startTrial(state, nowMs, days = TRIAL_DAYS) {
-  if (state.plan === 'pro') return state;
+  if (state.plan === 'pro' || state.plan === 'teams') return state;
   if (state.trialStartedAt) {
     const end = state.trialEndsAt ? Date.parse(state.trialEndsAt) : 0;
     if (end && nowMs <= end) return { ...state, plan: 'trial' };
@@ -51,15 +61,20 @@ function startTrial(state, nowMs, days = TRIAL_DAYS) {
 
 /** Mirror of src/shared/entitlements.ts applyRemoteEntitlement (Refresh plan). */
 function applyRemoteEntitlement(state, remote, nowMs) {
-  const plan =
-    remote.plan === 'pro' || remote.plan === 'trial' || remote.plan === 'community'
-      ? remote.plan
-      : state.plan;
+  const plan = isPlanId(remote.plan) ? remote.plan : state.plan;
+  const onTeams = plan === 'teams';
+  const networkEnabled = onTeams ? remote.networkEnabled !== false : false;
   return {
     ...state,
     plan,
-    trialEndsAt: remote.trialEndsAt ?? state.trialEndsAt,
+    trialEndsAt: remote.trialEndsAt !== undefined ? remote.trialEndsAt : state.trialEndsAt,
     lastRefreshAt: new Date(nowMs).toISOString(),
+    orgId: onTeams ? (typeof remote.orgId === 'string' ? remote.orgId : state.orgId) : null,
+    seatId: onTeams ? (typeof remote.seatId === 'string' ? remote.seatId : state.seatId) : null,
+    seatLabel: onTeams
+      ? (typeof remote.seatLabel === 'string' ? remote.seatLabel : state.seatLabel)
+      : null,
+    networkEnabled,
   };
 }
 
@@ -95,6 +110,7 @@ module.exports = {
   defaultEntitlementState,
   effectivePlan,
   requirePro,
+  canUseProFeatures,
   startTrial,
   applyRemoteEntitlement,
   isAllowedEntitlementUrl,

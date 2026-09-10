@@ -155,6 +155,7 @@ export interface HarnessConfig {
   billing?: {
     upgradeUrl?: string;
     manageUrl?: string;
+    teamsUrl?: string;
     entitlementUrl?: string;
   };
   /** classic | pro shell (mirrors main). */

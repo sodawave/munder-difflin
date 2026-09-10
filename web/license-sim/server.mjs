@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Local Pro license simulator — redeem MDS-* keys against an installId,
+ * Local Pro / Teams license simulator — redeem MDS-* keys against an installId,
  * serve entitlement JSON for the Electron app's Refresh plan.
  *
  * Not part of the product build. Run from this directory: npm start
@@ -13,13 +13,28 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 8787;
 const DATA_PATH = join(__dirname, '.data.json');
+const TEAMS_SEAT_CAP = 5;
+const TEAMS_ORG = 'org_demo';
 
-/** Demo keys → plan. Production would mint these after Stripe. */
+/** Demo keys → plan (+ Teams seat metadata). Production would mint these after Stripe. */
 const DEMO_KEYS = {
-  'MDS-00000-00000-00000': 'pro',
+  'MDS-00000-00000-00000': { plan: 'pro' },
+  'MDS-TEAM0-00000-00001': { plan: 'teams', orgId: TEAMS_ORG, seatId: 'seat_1', seatLabel: 'Ada' },
+  'MDS-TEAM0-00000-00002': { plan: 'teams', orgId: TEAMS_ORG, seatId: 'seat_2', seatLabel: 'Jim' },
+  'MDS-TEAM0-00000-00003': { plan: 'teams', orgId: TEAMS_ORG, seatId: 'seat_3', seatLabel: 'Pam' },
+  'MDS-TEAM0-00000-00004': { plan: 'teams', orgId: TEAMS_ORG, seatId: 'seat_4', seatLabel: 'Dwight' },
+  'MDS-TEAM0-00000-00005': { plan: 'teams', orgId: TEAMS_ORG, seatId: 'seat_5', seatLabel: 'Michael' },
+  // Extra key only to exercise seat-cap rejection once 00001–00005 are bound.
+  'MDS-TEAM0-00000-00006': { plan: 'teams', orgId: TEAMS_ORG, seatId: 'seat_6', seatLabel: 'Overflow' },
 };
 
-/** @type {{ keys: Record<string, { installId: string, plan: string, redeemedAt: string }>, byInstall: Record<string, { plan: string, trialEndsAt: null, key: string }> }} */
+/**
+ * @typedef {{
+ *   keys: Record<string, { installId: string, plan: string, redeemedAt: string, orgId?: string, seatId?: string, seatLabel?: string }>,
+ *   byInstall: Record<string, { plan: string, trialEndsAt: null, key: string, orgId?: string|null, seatId?: string|null, seatLabel?: string|null, networkEnabled?: boolean }>
+ * }} Store
+ */
+/** @type {Store} */
 let store = { keys: {}, byInstall: {} };
 
 function load() {
@@ -73,6 +88,45 @@ function readBody(req) {
   });
 }
 
+function countTeamsSeats(orgId) {
+  let n = 0;
+  for (const row of Object.values(store.byInstall)) {
+    if (row.plan === 'teams' && row.orgId === orgId) n += 1;
+  }
+  return n;
+}
+
+function entitlementPayload(row) {
+  if (!row) {
+    return {
+      plan: 'community',
+      trialEndsAt: null,
+      orgId: null,
+      seatId: null,
+      seatLabel: null,
+      networkEnabled: false,
+    };
+  }
+  if (row.plan === 'teams') {
+    return {
+      plan: 'teams',
+      trialEndsAt: row.trialEndsAt ?? null,
+      orgId: row.orgId ?? TEAMS_ORG,
+      seatId: row.seatId ?? null,
+      seatLabel: row.seatLabel ?? null,
+      networkEnabled: row.networkEnabled !== false,
+    };
+  }
+  return {
+    plan: row.plan,
+    trialEndsAt: row.trialEndsAt ?? null,
+    orgId: null,
+    seatId: null,
+    seatLabel: null,
+    networkEnabled: false,
+  };
+}
+
 load();
 
 const server = createServer(async (req, res) => {
@@ -101,12 +155,33 @@ const server = createServer(async (req, res) => {
       sendJson(res, 400, { error: 'missing installId' });
       return;
     }
-    const row = store.byInstall[installId];
-    if (!row) {
-      sendJson(res, 200, { plan: 'community', trialEndsAt: null });
+    sendJson(res, 200, entitlementPayload(store.byInstall[installId]));
+    return;
+  }
+
+  if (req.method === 'POST' && url.pathname === '/api/license/revoke') {
+    let body;
+    try {
+      body = await readBody(req);
+    } catch {
+      sendJson(res, 400, { error: 'invalid JSON' });
       return;
     }
-    sendJson(res, 200, { plan: row.plan, trialEndsAt: row.trialEndsAt ?? null });
+    const installId = String(body.installId || '').trim();
+    if (!installId) {
+      sendJson(res, 400, { error: 'missing installId' });
+      return;
+    }
+    const row = store.byInstall[installId];
+    if (!row) {
+      sendJson(res, 200, { ok: true, revoked: false });
+      return;
+    }
+    if (row.key && store.keys[row.key]) delete store.keys[row.key];
+    delete store.byInstall[installId];
+    save();
+    console.log(`[license-sim] revoked installId=${installId}`);
+    sendJson(res, 200, { ok: true, revoked: true, installId });
     return;
   }
 
@@ -124,22 +199,57 @@ const server = createServer(async (req, res) => {
       sendJson(res, 400, { error: 'missing installId' });
       return;
     }
-    const plan = DEMO_KEYS[key];
-    if (!plan) {
+    const meta = DEMO_KEYS[key];
+    if (!meta) {
       sendJson(res, 400, { error: 'unknown or invalid license key' });
       return;
     }
+
     // One machine per key: drop previous install binding for this key.
     const prev = store.keys[key];
     if (prev?.installId && prev.installId !== installId) {
       delete store.byInstall[prev.installId];
     }
+
+    if (meta.plan === 'teams') {
+      const already = store.byInstall[installId]?.key === key;
+      const seats = countTeamsSeats(meta.orgId);
+      const occupying = !!store.keys[key];
+      if (!already && !occupying && seats >= TEAMS_SEAT_CAP) {
+        sendJson(res, 400, { error: `team seat cap (${TEAMS_SEAT_CAP}) reached` });
+        return;
+      }
+    }
+
     const redeemedAt = new Date().toISOString();
-    store.keys[key] = { installId, plan, redeemedAt };
-    store.byInstall[installId] = { plan, trialEndsAt: null, key };
+    store.keys[key] = {
+      installId,
+      plan: meta.plan,
+      redeemedAt,
+      orgId: meta.orgId,
+      seatId: meta.seatId,
+      seatLabel: meta.seatLabel,
+    };
+    store.byInstall[installId] = {
+      plan: meta.plan,
+      trialEndsAt: null,
+      key,
+      orgId: meta.orgId ?? null,
+      seatId: meta.seatId ?? null,
+      seatLabel: meta.seatLabel ?? null,
+      networkEnabled: meta.plan === 'teams',
+    };
     save();
-    console.log(`[license-sim] redeemed ${key} → ${installId} (${plan})`);
-    sendJson(res, 200, { ok: true, plan, installId, redeemedAt });
+    console.log(`[license-sim] redeemed ${key} → ${installId} (${meta.plan})`);
+    sendJson(res, 200, {
+      ok: true,
+      plan: meta.plan,
+      installId,
+      redeemedAt,
+      orgId: meta.orgId ?? null,
+      seatId: meta.seatId ?? null,
+      seatLabel: meta.seatLabel ?? null,
+    });
     return;
   }
 
@@ -149,5 +259,6 @@ const server = createServer(async (req, res) => {
 server.listen(PORT, '127.0.0.1', () => {
   console.log(`[license-sim] http://127.0.0.1:${PORT}/`);
   console.log(`[license-sim] entitlement GET http://127.0.0.1:${PORT}/entitlement?installId=…`);
-  console.log(`[license-sim] demo key MDS-00000-00000-00000`);
+  console.log(`[license-sim] demo Pro  MDS-00000-00000-00000`);
+  console.log(`[license-sim] demo Team MDS-TEAM0-00000-00001 … 00005 (cap ${TEAMS_SEAT_CAP})`);
 });

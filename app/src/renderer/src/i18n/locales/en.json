@@ -175,14 +175,18 @@
     "startTrial": "Start 14-day Pro trial",
     "upgrade": "Upgrade",
     "managePlan": "Manage plan",
+    "startTeam": "Start a team",
+    "manageSeats": "Manage seats",
     "refreshPlan": "Refresh plan",
     "staplerOn": "Stapler on",
     "enableStapler": "Enable Stapler",
     "staplerTitle": "Floating Stapler capture puck",
-    "staplerNeedsPro": "Requires Pro or trial",
+    "staplerNeedsPro": "Requires Pro, Teams, or trial",
     "screenRecordingHint": "macOS: the first screenshot asks for Screen Recording permission. Grant it in System Settings → Privacy & Security if capture fails.",
     "trialUntil": "Pro trial active until {{date}}. {{blurb}}",
-    "proUnlocked": "Pro unlocked. {{blurb}}"
+    "proUnlocked": "Pro unlocked. {{blurb}}",
+    "teamsUnlocked": "Teams seat {{seat}}. {{blurb}}",
+    "teamsSeatFallback": "active"
   },
   "proShell": {
     "title": "PRO SIDEBAR",

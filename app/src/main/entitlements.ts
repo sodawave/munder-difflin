@@ -1,6 +1,6 @@
 /**
  * Main-process entitlement persistence and refresh.
- * Payment identifiers never flow through this module — only plan + trial timestamps.
+ * Payment identifiers never flow through this module — only plan + trial / seat metadata.
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
@@ -13,6 +13,7 @@ import {
   type BillingConfig,
   type PlanId,
   type ProFeature,
+  type RemoteEntitlement,
   DEFAULT_BILLING,
   defaultEntitlementState,
   effectivePlan,
@@ -40,12 +41,14 @@ export function setBillingConfig(partial: Partial<BillingConfig> | undefined): v
   billing = { ...DEFAULT_BILLING, ...partial };
 }
 
-/** Apply MD_UPGRADE_URL / MD_ENTITLEMENT_URL over the current billing config (local sim). */
+/** Apply MD_* URL env overrides over the current billing config (local sim). */
 export function applyBillingEnvOverrides(): void {
   const upgrade = (process.env.MD_UPGRADE_URL || '').trim();
   const entitlement = (process.env.MD_ENTITLEMENT_URL || '').trim();
+  const teams = (process.env.MD_TEAMS_URL || '').trim();
   if (upgrade) billing = { ...billing, upgradeUrl: upgrade };
   if (entitlement) billing = { ...billing, entitlementUrl: entitlement };
+  if (teams) billing = { ...billing, teamsUrl: teams };
 }
 
 export function getBillingConfig(): BillingConfig {
@@ -64,6 +67,10 @@ function load(): void {
       ...defaultEntitlementState(typeof raw.installId === 'string' ? raw.installId : randomUUID()),
       ...raw,
       installId: typeof raw.installId === 'string' && raw.installId ? raw.installId : randomUUID(),
+      orgId: typeof raw.orgId === 'string' ? raw.orgId : null,
+      seatId: typeof raw.seatId === 'string' ? raw.seatId : null,
+      seatLabel: typeof raw.seatLabel === 'string' ? raw.seatLabel : null,
+      networkEnabled: !!raw.networkEnabled,
     };
   } catch {
     /* keep defaults */
@@ -89,6 +96,7 @@ export function getEntitlementSnapshot(): {
   state: EntitlementState;
   plan: PlanId;
   canPro: boolean;
+  canNetwork: boolean;
   billing: BillingConfig;
 } {
   const plan = effectivePlan(state, Date.now(), { devUnlock: devUnlock() });
@@ -96,13 +104,14 @@ export function getEntitlementSnapshot(): {
     state: { ...state },
     plan,
     canPro: requirePro(plan, 'proShell'),
+    canNetwork: requirePro(plan, 'network', { networkEnabled: state.networkEnabled }),
     billing: getBillingConfig(),
   };
 }
 
 export function canUse(feature: ProFeature): boolean {
   const plan = effectivePlan(state, Date.now(), { devUnlock: devUnlock() });
-  return requirePro(plan, feature);
+  return requirePro(plan, feature, { networkEnabled: state.networkEnabled });
 }
 
 export function beginTrial(): EntitlementState {
@@ -129,26 +138,34 @@ export function setPlanLocal(plan: PlanId): EntitlementState {
   return { ...state };
 }
 
-/** Append installId so the external console / local sim can bind a license to this machine. */
-function withInstallId(url: string): string {
+/** Append installId (and seatId when known) for console / local sim binding. */
+function withMachineParams(url: string): string {
   try {
     const u = new URL(url);
     if (!u.searchParams.has('installId')) u.searchParams.set('installId', state.installId);
+    if (state.seatId && !u.searchParams.has('seatId')) u.searchParams.set('seatId', state.seatId);
     return u.toString();
   } catch {
     const sep = url.includes('?') ? '&' : '?';
-    return `${url}${sep}installId=${encodeURIComponent(state.installId)}`;
+    let out = `${url}${sep}installId=${encodeURIComponent(state.installId)}`;
+    if (state.seatId) out += `&seatId=${encodeURIComponent(state.seatId)}`;
+    return out;
   }
 }
 
 export async function openUpgrade(): Promise<void> {
   const base = billing.upgradeUrl || DEFAULT_BILLING.upgradeUrl;
-  await shell.openExternal(withInstallId(base));
+  await shell.openExternal(withMachineParams(base));
 }
 
 export async function openManage(): Promise<void> {
   const url = billing.manageUrl || DEFAULT_BILLING.manageUrl;
-  await shell.openExternal(url);
+  await shell.openExternal(withMachineParams(url));
+}
+
+export async function openTeams(): Promise<void> {
+  const url = billing.teamsUrl || billing.manageUrl || DEFAULT_BILLING.teamsUrl;
+  await shell.openExternal(withMachineParams(url));
 }
 
 /** True for production https, or loopback http used by web/license-sim. */
@@ -208,7 +225,7 @@ export async function refreshEntitlements(): Promise<EntitlementState> {
       `${url}${sep}installId=${encodeURIComponent(state.installId)}`,
       8000
     );
-    const remote = JSON.parse(body) as { plan?: string; trialEndsAt?: string | null };
+    const remote = JSON.parse(body) as RemoteEntitlement;
     state = applyRemoteEntitlement(state, remote, Date.now());
     save();
   } catch {

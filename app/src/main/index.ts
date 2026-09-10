@@ -19,7 +19,7 @@ import {
 } from './config';
 import {
   setEntitlementsHome, setBillingConfig, applyBillingEnvOverrides, getEntitlementSnapshot, beginTrial, refreshEntitlements,
-  openUpgrade, openManage, setStaplerEnabled, canUse as entitlementsCanUse,
+  openUpgrade, openManage, openTeams, setStaplerEnabled, canUse as entitlementsCanUse,
 } from './entitlements';
 import type { ProFeature } from '../shared/entitlements';
 import { initStapler, syncStaplerFromEntitlements } from './stapler';
@@ -3545,6 +3545,7 @@ ipcMain.handle('entitlements:beginTrial', () => beginTrial());
 ipcMain.handle('entitlements:refresh', () => refreshEntitlements());
 ipcMain.handle('entitlements:upgrade', () => openUpgrade());
 ipcMain.handle('entitlements:manage', () => openManage());
+ipcMain.handle('entitlements:openTeams', () => openTeams());
 ipcMain.handle('entitlements:setStaplerEnabled', (_evt, on: unknown) => setStaplerEnabled(on === true));
 ipcMain.handle('entitlements:canUse', (_evt, feature: unknown) => {
   const f = feature === 'stapler' || feature === 'proShell' ? (feature as ProFeature) : 'proShell';
