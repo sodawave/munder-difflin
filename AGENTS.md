@@ -85,7 +85,7 @@ Local-first Electron harness that turns coding-agent CLIs (`claude`, `codex`, `a
 - Absolute GitHub URLs for product assets use `main/app/docs/`; remote catalog/hero fetchers try `app/docs/` then fall back to legacy `docs/` on upstream.
 - Do not assume root `docs/` is the product site — it only holds `docs/superpowers/` methodology.
 - **Pro** is a local entitlement (`app/src/main/entitlements.ts`) plus external checkout via `shell.openExternal` — the app never collects or sends payment identifiers. Dev unlock: `MD_PRO_DEV_UNLOCK=1`. Pro cycle closed 2026-09-10 (`_bmad-output/planning-artifacts/2026-09-10-pro-upgrade/`).
-- Local Pro **license sim** lives under `web/license-sim/` (not `app/`). Point the Electron process at it with `MD_UPGRADE_URL` / `MD_ENTITLEMENT_URL` (see that folder’s README). The 14-day trial skips redeem; paid activation is key → `installId` → Refresh plan.
+- Local Pro / Teams **license sim** lives under `web/license-sim/` (not `app/`). Point the Electron process at it with `MD_UPGRADE_URL` / `MD_ENTITLEMENT_URL` / `MD_TEAMS_URL` (see that folder’s README). The 14-day trial skips redeem and never unlocks network; paid activation is key → `installId` → Refresh plan (`plan: pro|teams`).
 - **Teams license** (seats / `plan: teams` / console) is a separate BMAD cycle from sealed Private Network — analysis + plan under `_bmad-output/planning-artifacts/2026-09-10-teams-license/`. After that app point: production `web/` (Stripe↔license proxy + presentation + user backend) — see `FOLLOW-ON-web-prod.md` in that folder.
 
 <!-- /bmad:context -->

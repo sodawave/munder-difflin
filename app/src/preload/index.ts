@@ -336,6 +336,7 @@ export interface HarnessConfig {
   billing?: {
     upgradeUrl?: string;
     manageUrl?: string;
+    teamsUrl?: string;
     entitlementUrl?: string;
   };
   /** classic | pro shell (mirrors main). */
@@ -808,12 +809,14 @@ const api = {
       state: EntitlementState;
       plan: PlanId;
       canPro: boolean;
+      canNetwork: boolean;
       billing: BillingConfig;
     }> => ipcRenderer.invoke('entitlements:get'),
     beginTrial: (): Promise<EntitlementState> => ipcRenderer.invoke('entitlements:beginTrial'),
     refresh: (): Promise<EntitlementState> => ipcRenderer.invoke('entitlements:refresh'),
     upgrade: (): Promise<void> => ipcRenderer.invoke('entitlements:upgrade'),
     manage: (): Promise<void> => ipcRenderer.invoke('entitlements:manage'),
+    openTeams: (): Promise<void> => ipcRenderer.invoke('entitlements:openTeams'),
     setStaplerEnabled: (on: boolean): Promise<EntitlementState> =>
       ipcRenderer.invoke('entitlements:setStaplerEnabled', on),
     canUse: (feature: ProFeature): Promise<boolean> =>

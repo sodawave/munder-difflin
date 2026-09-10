@@ -1,8 +1,8 @@
 /**
  * The hero card at the top of Settings → General.
  *
- * Shows live entitlement plan (community / trial / pro) plus Upgrade / Manage /
- * Start trial actions. Marketing copy still comes from docs/hero.json.
+ * Shows live entitlement plan (community / trial / pro / teams) plus Upgrade /
+ * Manage / Start trial / Teams actions. Marketing copy still comes from docs/hero.json.
  */
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +17,7 @@ const FOUNDERS_WALL_URL = 'https://munderdiffl.in/wall.html';
 const DISCORD_URL = 'https://discord.gg/SEDzP5ZPk5';
 
 function planBadgeLabel(plan: PlanId, fallback: string): string {
+  if (plan === 'teams') return 'Teams';
   if (plan === 'pro') return 'Pro';
   if (plan === 'trial') return 'Pro trial';
   return fallback || 'Community';
@@ -30,6 +31,7 @@ export function SettingsHeroCard() {
   const [plan, setPlan] = useState<PlanId>('community');
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
   const [canPro, setCanPro] = useState(false);
+  const [seatLabel, setSeatLabel] = useState<string | null>(null);
   const [staplerOn, setStaplerOn] = useState(false);
 
   const refreshEntitlements = () => {
@@ -37,6 +39,7 @@ export function SettingsHeroCard() {
       setPlan(snap.plan);
       setTrialEndsAt(snap.state.trialEndsAt);
       setCanPro(snap.canPro);
+      setSeatLabel(snap.state.seatLabel);
       setStaplerOn(!!snap.state.staplerEnabled && snap.canPro);
     }).catch(() => { /* keep defaults */ });
   };
@@ -125,9 +128,14 @@ export function SettingsHeroCard() {
                   date: new Date(trialEndsAt).toLocaleDateString(),
                   blurb: PLAN.blurb,
                 })
-              : plan === 'pro'
-                ? t('settingsHero.proUnlocked', { blurb: PLAN.blurb })
-                : PLAN.blurb}
+              : plan === 'teams'
+                ? t('settingsHero.teamsUnlocked', {
+                    seat: seatLabel || t('settingsHero.teamsSeatFallback'),
+                    blurb: PLAN.blurb,
+                  })
+                : plan === 'pro'
+                  ? t('settingsHero.proUnlocked', { blurb: PLAN.blurb })
+                  : PLAN.blurb}
           </div>
           <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {!canPro && (
@@ -138,11 +146,18 @@ export function SettingsHeroCard() {
             <PixelButton variant="secondary" size="sm" onClick={() => void window.cth.entitlements?.upgrade?.()}>
               {t('settingsHero.upgrade')}
             </PixelButton>
-            {canPro && (
+            {canPro && plan !== 'teams' && (
               <PixelButton variant="ghost" size="sm" onClick={() => void window.cth.entitlements?.manage?.()}>
                 {t('settingsHero.managePlan')}
               </PixelButton>
             )}
+            <PixelButton
+              variant="ghost"
+              size="sm"
+              onClick={() => void window.cth.entitlements?.openTeams?.()}
+            >
+              {plan === 'teams' ? t('settingsHero.manageSeats') : t('settingsHero.startTeam')}
+            </PixelButton>
             <PixelButton variant="ghost" size="sm" onClick={() => void window.cth.entitlements?.refresh?.().then(() => refreshEntitlements())}>
               {t('settingsHero.refreshPlan')}
             </PixelButton>
