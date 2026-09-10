@@ -33,7 +33,7 @@ export function SettingsHeroCard() {
   const [staplerOn, setStaplerOn] = useState(false);
 
   const refreshEntitlements = () => {
-    void window.cth.entitlements.get().then((snap) => {
+    void window.cth.entitlements?.get?.().then((snap) => {
       setPlan(snap.plan);
       setTrialEndsAt(snap.state.trialEndsAt);
       setCanPro(snap.canPro);
@@ -76,7 +76,7 @@ export function SettingsHeroCard() {
   };
 
   const startTrial = () => {
-    void window.cth.entitlements.beginTrial().then(() => refreshEntitlements());
+    void window.cth.entitlements?.beginTrial?.().then(() => refreshEntitlements());
   };
 
   const INK = 'var(--cth-ink-900)';
@@ -135,15 +135,15 @@ export function SettingsHeroCard() {
                 {t('settingsHero.startTrial')}
               </PixelButton>
             )}
-            <PixelButton variant="secondary" size="sm" onClick={() => void window.cth.entitlements.upgrade()}>
+            <PixelButton variant="secondary" size="sm" onClick={() => void window.cth.entitlements?.upgrade?.()}>
               {t('settingsHero.upgrade')}
             </PixelButton>
             {canPro && (
-              <PixelButton variant="ghost" size="sm" onClick={() => void window.cth.entitlements.manage()}>
+              <PixelButton variant="ghost" size="sm" onClick={() => void window.cth.entitlements?.manage?.()}>
                 {t('settingsHero.managePlan')}
               </PixelButton>
             )}
-            <PixelButton variant="ghost" size="sm" onClick={() => void window.cth.entitlements.refresh().then(() => refreshEntitlements())}>
+            <PixelButton variant="ghost" size="sm" onClick={() => void window.cth.entitlements?.refresh?.().then(() => refreshEntitlements())}>
               {t('settingsHero.refreshPlan')}
             </PixelButton>
             <PixelButton
@@ -216,7 +216,7 @@ export function SettingsHeroCard() {
             {t('settingsHero.seeTheWall')}
           </PixelButton>
           {PLAN.upgrade && (
-            <PixelButton variant="secondary" size="sm" onClick={() => void window.cth.entitlements.upgrade()}>
+            <PixelButton variant="secondary" size="sm" onClick={() => void window.cth.entitlements?.upgrade?.()}>
               {PLAN.upgrade.label}
             </PixelButton>
           )}

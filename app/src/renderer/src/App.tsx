@@ -85,7 +85,7 @@ export function App() {
   useEffect(() => {
     let alive = true;
     const refresh = () => {
-      void window.cth.entitlements.get().then((s) => {
+      void window.cth.entitlements?.get?.().then((s) => {
         if (alive) setCanPro(s.canPro);
       }).catch(() => { /* community floor still works */ });
     };
@@ -330,7 +330,7 @@ export function App() {
             const next = config.ui?.shell === 'pro' ? 'classic' : 'pro';
             void window.cth.updateConfig({ ui: { ...config.ui, shell: next } }).then((c) => setConfig(c));
             if (next === 'pro') {
-              void window.cth.entitlements.get().then((s) => setCanPro(s.canPro));
+              void window.cth.entitlements?.get?.().then((s) => setCanPro(s.canPro));
             }
           }}
           data-tip={config.ui?.shell === 'pro' ? 'Switch to Classic floor' : 'Switch to Pro sidebar'}
@@ -437,7 +437,7 @@ export function App() {
             config={config}
             canPro={canPro}
             onEntitlementChange={() => {
-              void window.cth.entitlements.get().then((s) => setCanPro(s.canPro));
+              void window.cth.entitlements?.get?.().then((s) => setCanPro(s.canPro));
             }}
             onUseClassic={() => {
               void window.cth.updateConfig({ ui: { ...config.ui, shell: 'classic' } }).then(setConfig);
