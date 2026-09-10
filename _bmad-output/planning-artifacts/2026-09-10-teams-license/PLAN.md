@@ -1,87 +1,93 @@
 ---
 title: Plan — Teams license (entitlements + local sim)
-status: draft
+status: ready
 created: 2026-09-10
-depends_on: Pro cycle closed (2026-09-10-pro-upgrade)
+updated: 2026-09-10
+depends_on: Pro cycle closed (merged to dev)
 ---
 
 # Plan: Teams license
 
-## Locked decisions (from analysis; confirm before build)
+Executable plan after Pro close. **License plane only** — Private Network crypto is a later cycle.
 
-- **Scope = license plane only** — plan/seat/org entitlements, Refresh, console URLs, local sim. No sealed relay, no `deviceIdentity`, no sandboxes.
-- **`teams` implies Pro features** — `requirePro` true for `teams` (and existing `pro` / `trial`).
-- **Console owns seats/billing** — app never sees payment ids; same privacy rule as Pro.
-- **Boot still local-only** — remote sync via Refresh plan (or Teams-named control); no mandatory auto-refresh on boot in this plan.
-- **Simulator outside `app/`** — extend `web/license-sim/` (or `web/teams-sim/`) for multi-seat demo.
+## Locked decisions
 
-## Proposed entitlement model
+| # | Decision |
+|---|----------|
+| L1 | Scope = entitlements + Settings CTAs + local sim. No sealed relay, no `deviceIdentity`, no sandboxes, no in-app seat admin. |
+| L2 | `PlanId` extends with `'teams'` (not a separate tier/features map). |
+| L3 | `teams` ⇒ Pro feature gates (`proShell`, `stapler`) always. |
+| L4 | In-app Pro **trial does not** grant network / Teams. Network only when `plan === 'teams'` (or explicit `networkEnabled: true` from remote). |
+| L5 | Redeem artifact for local sim = per-seat `MDS-…` key (same family as Pro). Production console may mint the same shape; invite tokens are out of scope. |
+| L6 | One key ↔ one `installId` (re-redeem overwrites previous bind), same as Pro sim. |
+| L7 | Seat revoke via Refresh → default `plan: 'community'` (clears org/seat/network). |
+| L8 | Console URL: `billing.teamsUrl` (env `MD_TEAMS_URL`, default `https://harnessmd.com/console`); append `installId` (+ `seatId` when known). |
+| L9 | Boot still reads local `entitlements.json` only; remote = Refresh plan. |
+| L10 | Extend `web/license-sim/` (not a second package) for Teams demo keys. |
+
+## Entitlement model
 
 ```ts
-PlanId = 'community' | 'trial' | 'pro' | 'teams'
+type PlanId = 'community' | 'trial' | 'pro' | 'teams'
 
-EntitlementState += {
-  orgId?: string | null
-  seatId?: string | null
-  seatLabel?: string | null   // display only
-  networkEnabled?: boolean    // true when plan === 'teams' (or explicit flag)
+type ProFeature = 'proShell' | 'stapler' | 'network'
+
+interface EntitlementState {
+  plan: PlanId
+  trialStartedAt: string | null
+  trialEndsAt: string | null
+  staplerEnabled: boolean
+  installId: string
+  lastRefreshAt: string | null
+  orgId: string | null
+  seatId: string | null
+  seatLabel: string | null
+  networkEnabled: boolean
 }
 ```
 
-Remote Refresh body (minimum):
+`effectivePlan` / `canUseProFeatures`: `pro | trial | teams` → Pro UI/Stapler.  
+`requirePro(plan, 'network')` / `canUse('network')`: requires `plan === 'teams'` **and** `networkEnabled` (set true on Teams refresh; false on revoke).
+
+### Refresh JSON
 
 ```json
 {
   "plan": "teams",
   "trialEndsAt": null,
-  "orgId": "org_…",
-  "seatId": "seat_…",
+  "orgId": "org_demo",
+  "seatId": "seat_1",
   "seatLabel": "Ada",
   "networkEnabled": true
 }
 ```
 
-Invalid / revoked seat → `{ "plan": "community" }` or `{ "plan": "pro" }` per console policy (default: community if seat revoked).
+Pro-only refresh stays `{ "plan": "pro", "trialEndsAt": null }` (org/seat null, `networkEnabled` false).
 
-## Workstreams
+## Workstreams → stories
 
-### 1. Shared + main entitlements
+See `epics.md`. Summary:
 
-- Extend `PlanId` and `applyRemoteEntitlement` / `effectivePlan` / `canUseProFeatures`.
-- Gate stub: `canUse('network')` or `networkEnabled && plan === 'teams'` (no network UI required yet — gate for future).
-- Settings: show Teams badge when plan is teams; CTA **Start a team** / **Manage seats** → `billing.teamsUrl` or reuse `manageUrl` (`https://harnessmd.com/console`).
-- Env overrides (document in sim `.env.example`):
-  - keep `MD_UPGRADE_URL` / `MD_ENTITLEMENT_URL`
-  - add `MD_TEAMS_URL` → console / teams checkout (optional if manageUrl suffices)
-
-### 2. Local Teams sim
-
-- Demo keys e.g. `MDS-TEAM0-00000-00001` … bind `(key → { installId, orgId, seatId, plan: 'teams' })`.
-- Cap seats in sim (e.g. 5) to exercise “seat full”.
-- `GET /entitlement?installId=` returns Teams payload when bound.
-- README checklist: redeem seat → Refresh → Settings shows Teams; revoke in sim → Refresh → community.
-
-### 3. Docs
-
-- AGENTS.md: Teams license cycle pointer; network protocol still future.
-- Close note in Pro retrospective already points here.
+1. **Shared gates** — PlanId, applyRemote, network gate, CJS test mirror.
+2. **Main + Settings** — persist new fields; Teams badge; Start a team / Manage seats; `MD_TEAMS_URL`.
+3. **license-sim** — Teams keys, seat cap, revoke endpoint or admin delete; README checklist.
+4. **Docs verify** — AGENTS already points here; typecheck + tests + curl checklist.
 
 ## Non-goals
 
-- X25519 / sealed boxes / relay service.
-- In-app seat admin (invite, remove, invoices).
-- Hosted sandboxes / mobile remote control.
-- Changing Pro solo MDS flow (except shared schema compatibility).
+- X25519 / sealed boxes / relay.
+- In-app invites, invoices, seat slider.
+- Auto-refresh on every boot.
+- Changing solo Pro MDS `MDS-00000-00000-00000` behavior.
 
 ## Verify
 
-- Unit tests: `teams` ⇒ Pro gates; revoked seat ⇒ no Pro/network.
-- Sim curl: community → redeem team key → teams payload → revoke → community.
-- `npm run typecheck` in `app/`.
-- Manual: Settings badge + Manage opens console URL with `installId` (and `seatId` if present).
+- Unit: `teams` ⇒ Pro gates + network; `trial`/`pro` ⇒ no network; revoke ⇒ community.
+- Sim: redeem team key → Refresh teams → revoke → community.
+- `npm run typecheck` from `app/`.
+- Manual: Settings shows Teams; Manage opens console with `installId`.
 
-## Sequencing after this plan
+## After this plan ships
 
-1. Human locks open questions in ANALYSIS.md (especially redeem artifact shape).
-2. BMAD PRD/epics for Teams license (this plan’s workstreams → stories).
-3. Later cycle: Private Network protocol behind `networkEnabled`.
+1. BMAD cycle for Private Network behind `canUse('network')` (optional sequencing — may trail web/).
+2. **Next major cycle (remember):** professional / production `web/` — real presentation site + user backend that **proxies licenses ↔ Stripe-paid entitlements** (replaces local `web/license-sim/` for prod). Do this only after the Teams license point in the app is done.
