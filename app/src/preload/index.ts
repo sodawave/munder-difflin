@@ -834,8 +834,12 @@ const api = {
       { ok: true; path: string } | { ok: false; error: string }
     > => ipcRenderer.invoke('stapler:finishCapture', region),
     cancelCapture: (): Promise<{ ok: boolean }> => ipcRenderer.invoke('stapler:cancelCapture'),
-    sendToOrchestrator: (payload: { path: string; note?: string }): Promise<{ ok: boolean; error?: string }> =>
+    sendToOrchestrator: (payload: { path?: string; note?: string; transcript?: string }): Promise<{ ok: boolean; error?: string }> =>
       ipcRenderer.invoke('stapler:sendToOrchestrator', payload),
+    transcribe: (payload: { audio: ArrayBuffer; mimeType?: string; filename?: string }): Promise<{ ok: boolean; text?: string; error?: string }> =>
+      ipcRenderer.invoke('stapler:transcribe', payload),
+    saveAudio: (payload: { audio: ArrayBuffer; ext?: string }): Promise<{ ok: true; path: string } | { ok: false; error: string }> =>
+      ipcRenderer.invoke('stapler:saveAudio', payload),
     resizeNote: (): Promise<{ ok: boolean }> => ipcRenderer.invoke('stapler:resizeNote'),
     resizePuck: (): Promise<{ ok: boolean }> => ipcRenderer.invoke('stapler:resizePuck'),
     onCaptureReady: (cb: (info: { path: string }) => void): (() => void) => {

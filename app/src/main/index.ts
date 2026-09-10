@@ -2343,7 +2343,14 @@ function createWindow(opts: { floor?: boolean } = {}): BrowserWindow {
   // xterm/editor copy must keep working).
   const micFeatureLive = (): boolean => {
     const cfg = readConfig();
-    return cfg.freeflowEnabled === true || cfg.realtimeVoiceEnabled === true;
+    if (cfg.freeflowEnabled === true || cfg.realtimeVoiceEnabled === true) return true;
+    // Stapler message/meeting/dictation (Pro) — mic only while puck is enabled.
+    try {
+      const snap = getEntitlementSnapshot();
+      return snap.canPro && snap.state.staplerEnabled;
+    } catch {
+      return false;
+    }
   };
   const ses = win.webContents.session;
   ses.setPermissionRequestHandler((_wc, permission, callback, details) => {

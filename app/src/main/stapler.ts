@@ -97,23 +97,56 @@ export function initStapler(opts: {
   });
 
   ipcMain.handle('stapler:sendToOrchestrator', (_evt, payload: unknown) => {
-    const p = (payload ?? {}) as { path?: unknown; note?: unknown };
-    if (typeof p.path !== 'string' || !p.path) return { ok: false, error: 'missing path' };
+    const p = (payload ?? {}) as { path?: unknown; note?: unknown; transcript?: unknown };
+    if (typeof p.path !== 'string' && typeof p.transcript !== 'string') {
+      return { ok: false, error: 'missing path or transcript' };
+    }
     if (!hiveRef || !hiveRef.enabled()) return { ok: false, error: 'hive disabled (no harnessHome)' };
     const note = typeof p.note === 'string' ? p.note.trim() : '';
-    const body = [
-      'Stapler capture for the orchestrator.',
-      `Path: ${p.path}`,
-      note ? `Note: ${note}` : 'Note: (none)',
-    ].join('\n');
+    const transcript = typeof p.transcript === 'string' ? p.transcript.trim() : '';
+    const lines = ['Stapler capture for the orchestrator.'];
+    if (typeof p.path === 'string' && p.path) lines.push(`Path: ${p.path}`);
+    if (transcript) lines.push(`Transcript:\n${transcript}`);
+    lines.push(note ? `Note: ${note}` : 'Note: (none)');
     const msg: HiveMessage = hiveRef.send({
       to: 'god',
       act: 'inform',
-      subject: 'Stapler capture',
-      body,
+      subject: transcript ? 'Stapler voice capture' : 'Stapler capture',
+      body: lines.join('\n'),
     }, 'human');
     showPuck();
     return { ok: true, message: msg };
+  });
+
+  ipcMain.handle('stapler:transcribe', async (_evt, arg: unknown) => {
+    if (!canUse('stapler')) return { ok: false, error: 'Pro or trial required' };
+    const cfg = readConfig();
+    if (!cfg.groqApiKey) {
+      return { ok: false, error: 'No Groq API key — set one in Settings → Voice (Free Flow key is reused).' };
+    }
+    const a = (arg ?? {}) as { audio?: ArrayBuffer; mimeType?: string; filename?: string };
+    if (!a.audio) return { ok: false, error: 'missing audio' };
+    const { transcribeWithGroq, DEFAULT_GROQ_MODEL } = await import('./freeflow');
+    return transcribeWithGroq({
+      apiKey: cfg.groqApiKey,
+      audio: a.audio,
+      mimeType: typeof a.mimeType === 'string' ? a.mimeType : 'audio/webm',
+      filename: typeof a.filename === 'string' ? a.filename : 'stapler.webm',
+      model: cfg.freeflowModel || DEFAULT_GROQ_MODEL,
+    });
+  });
+
+  ipcMain.handle('stapler:saveAudio', (_evt, payload: unknown) => {
+    const p = (payload ?? {}) as { audio?: ArrayBuffer; ext?: string };
+    if (!p.audio) return { ok: false as const, error: 'missing audio' };
+    const home = readConfig().harnessHome;
+    if (!home) return { ok: false as const, error: 'harness home not set' };
+    const dir = join(home, 'stapler', 'audio');
+    mkdirSync(dir, { recursive: true });
+    const ext = typeof p.ext === 'string' && p.ext ? p.ext.replace(/^\./, '') : 'webm';
+    const dest = join(dir, `audio-${Date.now()}.${ext}`);
+    writeFileSync(dest, Buffer.from(p.audio));
+    return { ok: true as const, path: dest };
   });
 }
 
