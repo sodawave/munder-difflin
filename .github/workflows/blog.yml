@@ -1,18 +1,18 @@
 name: Build blog
 
-# Rebuilds the Eleventy blog into docs/blog whenever the blog source changes,
+# Rebuilds the Eleventy blog into app/docs/blog whenever the blog source changes,
 # and commits the generated output. The site itself is served by the existing
-# GitHub Pages "deploy from branch" setup (docs/ + CNAME) — this workflow only
-# regenerates the static files under docs/blog, it does NOT change Pages config.
+# GitHub Pages "deploy from branch" setup (app/docs/ + CNAME) — this workflow only
+# regenerates the static files under app/docs/blog, it does NOT change Pages config.
 #
-# Trigger is scoped to blog/** so the commit it makes (under docs/blog) never
+# Trigger is scoped to app/blog/** so the commit it makes (under app/docs/blog) never
 # re-triggers the workflow. Safe to run manually via workflow_dispatch.
 
 on:
   push:
     branches: [main]
     paths:
-      - "blog/**"
+      - "app/blog/**"
       - ".github/workflows/blog.yml"
   workflow_dispatch:
 
@@ -30,7 +30,7 @@ jobs:
           node-version: "22"
 
       - name: Install + build blog
-        working-directory: blog
+        working-directory: app/blog
         run: |
           npm ci
           npm run build
@@ -39,10 +39,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # docs/blog = the built site; docs/sitemap.xml = root sitemap the
+          # app/docs/blog = the built site; app/docs/sitemap.xml = root sitemap the
           # build regenerates (owned by this build, per the Kevin handoff).
-          if [ -n "$(git status --porcelain docs/blog docs/sitemap.xml)" ]; then
-            git add docs/blog docs/sitemap.xml
+          if [ -n "$(git status --porcelain app/docs/blog app/docs/sitemap.xml)" ]; then
+            git add app/docs/blog app/docs/sitemap.xml
             git commit -m "chore(blog): rebuild static output [skip ci]"
             git push
           else

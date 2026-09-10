@@ -1,4 +1,4 @@
-# Founders' Wall sync — rebuilds docs/wall-data.json from Razorpay truth.
+# Founders' Wall sync — rebuilds app/docs/wall-data.json from Razorpay truth.
 # Additions open a PR for founder review; refund/dispute removals commit directly.
 # Requires repo Actions secrets: RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET.
 name: wall-sync
@@ -31,6 +31,9 @@ permissions:
 jobs:
   sync:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
     steps:
       - uses: actions/checkout@v4
         with:

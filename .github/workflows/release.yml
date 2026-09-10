@@ -16,6 +16,9 @@ jobs:
   build:
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        working-directory: app
     strategy:
       fail-fast: false
       matrix:
@@ -33,6 +36,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: app/package-lock.json
 
       # node-gyp (used to rebuild native node-pty) imports distutils, which was
       # removed in Python 3.12. Pin 3.11 and install setuptools so the distutils
@@ -99,13 +103,13 @@ jobs:
           # latest-mac.yml points Squirrel.Mac at the zip; nsis/AppImage use
           # latest.yml/latest-linux.yml + blockmaps for differential download.
           path: |
-            dist/*.dmg
-            dist/*.zip
-            dist/*.exe
-            dist/*.AppImage
-            dist/*.blockmap
-            dist/latest*.yml
-            dist/SHA256SUMS-*.txt
+            app/dist/*.dmg
+            app/dist/*.zip
+            app/dist/*.exe
+            app/dist/*.AppImage
+            app/dist/*.blockmap
+            app/dist/latest*.yml
+            app/dist/SHA256SUMS-*.txt
           if-no-files-found: warn
 
   publish:
@@ -131,7 +135,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           # RELEASE.md is the human-facing notes; GitHub shows it as the body.
-          body_path: RELEASE.md
+          body_path: app/RELEASE.md
           # A tag carrying a pre-release suffix (v0.4.4-rc.1, -beta.2 …) publishes
           # as a PRE-RELEASE. This is load-bearing, not cosmetic: the in-app
           # updater polls /releases/latest, and GitHub excludes pre-releases from
