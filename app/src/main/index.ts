@@ -18,7 +18,7 @@ import {
   modelForRole, OPS_STANDUP_MISSION, HEARTBEAT_MISSION, COMPACT_MAINTENANCE_MISSION, type HarnessConfig, type ScheduledMission
 } from './config';
 import {
-  setEntitlementsHome, setBillingConfig, getEntitlementSnapshot, beginTrial, refreshEntitlements,
+  setEntitlementsHome, setBillingConfig, applyBillingEnvOverrides, getEntitlementSnapshot, beginTrial, refreshEntitlements,
   openUpgrade, openManage, setStaplerEnabled, canUse as entitlementsCanUse,
 } from './entitlements';
 import type { ProFeature } from '../shared/entitlements';
@@ -5072,6 +5072,8 @@ ipcMain.handle('workers:stop', (_evt, workerId: string): { ok: boolean; error?: 
 function syncEntitlementsFromConfig(cfg: HarnessConfig = readConfig()): void {
   setEntitlementsHome(cfg.harnessHome);
   setBillingConfig(cfg.billing);
+  // Local license sim / staging: MD_UPGRADE_URL + MD_ENTITLEMENT_URL (see web/license-sim/).
+  applyBillingEnvOverrides();
 }
 
 /** Start every hive-bound background service against the current harnessHome.

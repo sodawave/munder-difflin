@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Activate license — Munder Difflin (local sim)</title>
+  <style>
+    :root {
+      --ink: #1a1320;
+      --paper: #f4f1ea;
+      --cream: #fff8e7;
+      --lilac: #c4b5e0;
+      --muted: #6b5878;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; min-height: 100vh;
+      font-family: "Inter", system-ui, sans-serif;
+      background: linear-gradient(165deg, var(--cream) 0%, #ebe4d4 100%);
+      color: var(--ink);
+      display: flex; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    main {
+      width: 100%; max-width: 420px;
+      background: var(--paper);
+      border: 2px solid var(--ink);
+      box-shadow: 4px 4px 0 rgba(26,19,32,0.2);
+      padding: 28px 24px;
+    }
+    .eyebrow {
+      font-family: ui-monospace, monospace;
+      font-size: 10px; letter-spacing: .16em; text-transform: uppercase;
+      color: var(--muted); margin-bottom: 10px;
+    }
+    h1 { font-size: 22px; margin: 0 0 8px; line-height: 1.25; }
+    .lede { font-size: 14px; line-height: 1.5; color: var(--muted); margin: 0 0 20px; }
+    label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 6px; }
+    input[type="text"] {
+      width: 100%; padding: 10px 12px; font-size: 15px;
+      font-family: ui-monospace, monospace;
+      border: 2px solid var(--ink); background: #fff;
+      margin-bottom: 8px;
+    }
+    .hint { font-size: 12px; color: var(--muted); margin: 0 0 16px; line-height: 1.45; }
+    .machine {
+      font-size: 11px; font-family: ui-monospace, monospace;
+      word-break: break-all; padding: 8px 10px; margin-bottom: 16px;
+      background: var(--cream); border: 1px solid #cfc6b6;
+    }
+    .machine.missing { border-color: #c44; color: #822; }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; }
+    button, .link-btn {
+      font-family: ui-monospace, monospace; font-size: 12px;
+      padding: 10px 14px; border: 2px solid var(--ink); cursor: pointer;
+      text-decoration: none; color: var(--ink); display: inline-block;
+    }
+    button.primary { background: var(--ink); color: var(--paper); }
+    button.primary:disabled { opacity: .5; cursor: not-allowed; }
+    .ghost { background: transparent; }
+    #status {
+      margin-top: 16px; font-size: 13px; line-height: 1.45;
+      min-height: 1.2em;
+    }
+    #status.ok { color: #1a5c3a; }
+    #status.err { color: #8b1a1a; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">Local license sim · not production</div>
+    <h1>Enter your license key</h1>
+    <p class="lede">The key came with your solo plan. It activates this machine.</p>
+
+    <label for="key">License key</label>
+    <input id="key" type="text" spellcheck="false" autocomplete="off"
+      placeholder="MDS-00000-00000-00000" value="MDS-00000-00000-00000" />
+    <p class="hint">Your key is in your console, and on the receipt for your plan. Demo key is prefilled.</p>
+
+    <div id="machine" class="machine">installId: (loading…)</div>
+
+    <div class="row">
+      <button type="button" class="primary" id="activate">Activate</button>
+      <a class="link-btn ghost" href="https://harnessmd.com/console" target="_blank" rel="noopener">Open my console</a>
+    </div>
+    <p class="hint" style="margin-top:14px">After Activate, return to the app and click <b>Refresh plan</b> in Settings.</p>
+    <div id="status"></div>
+  </main>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const installId = (params.get('installId') || '').trim();
+    const machine = document.getElementById('machine');
+    const status = document.getElementById('status');
+    const activate = document.getElementById('activate');
+
+    if (installId) {
+      machine.textContent = 'installId: ' + installId;
+      machine.classList.remove('missing');
+    } else {
+      machine.textContent = 'No installId in the URL. Open Upgrade from the app so ?installId=… is appended.';
+      machine.classList.add('missing');
+      activate.disabled = true;
+    }
+
+    activate.addEventListener('click', async () => {
+      const key = document.getElementById('key').value.trim();
+      status.className = '';
+      status.textContent = 'Activating…';
+      activate.disabled = true;
+      try {
+        const res = await fetch('/api/license/redeem', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ key, installId }),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          status.className = 'err';
+          status.textContent = body.error || ('HTTP ' + res.status);
+          activate.disabled = false;
+          return;
+        }
+        status.className = 'ok';
+        status.textContent = 'Activated plan "' + (body.plan || 'pro') + '" for this machine. Refresh plan in the app.';
+      } catch (e) {
+        status.className = 'err';
+        status.textContent = e instanceof Error ? e.message : String(e);
+      }
+      activate.disabled = !installId;
+    });
+  </script>
+</body>
+</html>

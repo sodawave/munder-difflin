@@ -1,0 +1,9 @@
+{
+  "name": "munder-license-sim",
+  "private": true,
+  "version": "0.0.1",
+  "description": "Local Pro license-key simulator for Munder Difflin (outside app/)",
+  "scripts": {
+    "start": "node server.mjs"
+  }
+}

@@ -5,6 +5,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { join } from 'node:path';
+import { request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
 import { shell } from 'electron';
 import {
   type EntitlementState,
@@ -36,6 +38,14 @@ export function setEntitlementsHome(dir: string | null): void {
 
 export function setBillingConfig(partial: Partial<BillingConfig> | undefined): void {
   billing = { ...DEFAULT_BILLING, ...partial };
+}
+
+/** Apply MD_UPGRADE_URL / MD_ENTITLEMENT_URL over the current billing config (local sim). */
+export function applyBillingEnvOverrides(): void {
+  const upgrade = (process.env.MD_UPGRADE_URL || '').trim();
+  const entitlement = (process.env.MD_ENTITLEMENT_URL || '').trim();
+  if (upgrade) billing = { ...billing, upgradeUrl: upgrade };
+  if (entitlement) billing = { ...billing, entitlementUrl: entitlement };
 }
 
 export function getBillingConfig(): BillingConfig {
@@ -119,9 +129,21 @@ export function setPlanLocal(plan: PlanId): EntitlementState {
   return { ...state };
 }
 
+/** Append installId so the external console / local sim can bind a license to this machine. */
+function withInstallId(url: string): string {
+  try {
+    const u = new URL(url);
+    if (!u.searchParams.has('installId')) u.searchParams.set('installId', state.installId);
+    return u.toString();
+  } catch {
+    const sep = url.includes('?') ? '&' : '?';
+    return `${url}${sep}installId=${encodeURIComponent(state.installId)}`;
+  }
+}
+
 export async function openUpgrade(): Promise<void> {
-  const url = billing.upgradeUrl || DEFAULT_BILLING.upgradeUrl;
-  await shell.openExternal(url);
+  const base = billing.upgradeUrl || DEFAULT_BILLING.upgradeUrl;
+  await shell.openExternal(withInstallId(base));
 }
 
 export async function openManage(): Promise<void> {
@@ -129,16 +151,63 @@ export async function openManage(): Promise<void> {
   await shell.openExternal(url);
 }
 
+/** True for production https, or loopback http used by web/license-sim. */
+function isAllowedEntitlementUrl(url: string): boolean {
+  if (url.startsWith('https://')) return true;
+  try {
+    const u = new URL(url);
+    if (u.protocol !== 'http:') return false;
+    return u.hostname === '127.0.0.1' || u.hostname === 'localhost';
+  } catch {
+    return false;
+  }
+}
+
+/** GET text over https (via getText) or loopback http for the local license sim. */
+function fetchEntitlementBody(url: string, timeoutMs: number): Promise<string> {
+  if (url.startsWith('https://')) return getText(url, { timeoutMs });
+  return new Promise((resolve, reject) => {
+    let parsed: URL;
+    try {
+      parsed = new URL(url);
+    } catch (e) {
+      reject(e);
+      return;
+    }
+    const lib = parsed.protocol === 'https:' ? httpsRequest : httpRequest;
+    const req = lib(parsed, { method: 'GET', headers: { 'user-agent': 'munder-difflin' } }, (res) => {
+      if (res.statusCode && res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.resume();
+        fetchEntitlementBody(res.headers.location, timeoutMs).then(resolve, reject);
+        return;
+      }
+      if (res.statusCode !== 200) {
+        res.resume();
+        reject(new Error(`HTTP ${res.statusCode}`));
+        return;
+      }
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (c) => { body += c; });
+      res.on('end', () => resolve(body));
+    });
+    req.on('error', reject);
+    req.setTimeout(timeoutMs, () => req.destroy(new Error('timed out')));
+    req.end();
+  });
+}
+
 export async function refreshEntitlements(): Promise<EntitlementState> {
   const url = (billing.entitlementUrl || '').trim();
-  if (!url.startsWith('https://')) {
+  if (!url || !isAllowedEntitlementUrl(url)) {
     return { ...state };
   }
   try {
     const sep = url.includes('?') ? '&' : '?';
-    const body = await getText(`${url}${sep}installId=${encodeURIComponent(state.installId)}`, {
-      timeoutMs: 8000,
-    });
+    const body = await fetchEntitlementBody(
+      `${url}${sep}installId=${encodeURIComponent(state.installId)}`,
+      8000
+    );
     const remote = JSON.parse(body) as { plan?: string; trialEndsAt?: string | null };
     state = applyRemoteEntitlement(state, remote, Date.now());
     save();
