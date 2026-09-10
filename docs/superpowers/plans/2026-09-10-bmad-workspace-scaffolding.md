@@ -22,7 +22,9 @@
 - Preserve `docs/superpowers/` at workspace root (do not bury it under `app/docs/`)
 - Keep `.git`, `.github/`, and root process files at root; product code only under `app/`
 - No git submodules
-- No force-push; commit locally; push only if the user asks
+- **Branch:** all work on **`DEV`**; never merge to **`main`** unless the human explicitly requests it (`main` = prod/deploy only)
+- No force-push; commit locally on `DEV`; push only if the user asks
+- **Quality:** ordered modeling (spec → plan → implement → verify); tests or executable verification checklist; double confirmation before mass moves / BMAD install / merge to `main`; zero hallucination — verify claims with evidence before asserting them
 
 ---
 
@@ -298,6 +300,12 @@ Create `/Users/rafa/Projects/HARNESS/munder-difflin/AGENTS.md` with exactly this
 - **Method:** BMad Method at the workspace root (`_bmad/`, Cursor commands under `.cursor/commands/bmad/`).
 - BMAD is the **principal development process**. Office/hire agents inside the product are runtime features of Munder, not the build method.
 
+## Branches
+
+- Work only on `DEV`.
+- `main` is production/deploy. Merge `DEV` → `main` only when the human explicitly asks.
+- Do not merge to `main`, release, or deploy without that request.
+
 ## Language
 
 - Chat with the human in **Spanish** when they write in Spanish.
@@ -308,6 +316,13 @@ Create `/Users/rafa/Projects/HARNESS/munder-difflin/AGENTS.md` with exactly this
 - Implement product code only under `app/`.
 - Keep methodology files at repo root (`_bmad/`, `_bmad-output/`, `docs/superpowers/`, `AGENTS.md`).
 - Do not install or reinstall BMAD inside `app/`.
+
+## Quality
+
+- Follow spec → plan → implement → verify with evidence.
+- Prefer tests for behavior changes; otherwise run an executable verification checklist.
+- Double-confirm large/irreversible steps with the human.
+- Never claim success, existence, or test results without verifying in the current session.
 
 ## Process
 
