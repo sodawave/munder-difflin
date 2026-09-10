@@ -37,16 +37,39 @@ export function setEntitlementsHome(dir: string | null): void {
   load();
 }
 
-export function setBillingConfig(partial: Partial<BillingConfig> | undefined): void {
-  billing = { ...DEFAULT_BILLING, ...partial };
+/** Drop the old harnessmd.com placeholder so Start a team / Manage seats open
+ *  our account console instead of a dead brand site. */
+function scrubLegacyBillingHost(url: string | undefined, fallback: string): string {
+  const u = (url || '').trim();
+  if (!u) return fallback;
+  try {
+    const host = new URL(u).hostname.toLowerCase();
+    if (host === 'harnessmd.com' || host.endsWith('.harnessmd.com')) return fallback;
+  } catch {
+    return fallback;
+  }
+  return u;
 }
 
-/** Apply MD_* URL env overrides over the current billing config (local sim). */
+export function setBillingConfig(partial: Partial<BillingConfig> | undefined): void {
+  const merged = { ...DEFAULT_BILLING, ...partial };
+  billing = {
+    ...merged,
+    upgradeUrl: scrubLegacyBillingHost(merged.upgradeUrl, DEFAULT_BILLING.upgradeUrl),
+    manageUrl: scrubLegacyBillingHost(merged.manageUrl, DEFAULT_BILLING.manageUrl),
+    teamsUrl: scrubLegacyBillingHost(merged.teamsUrl, DEFAULT_BILLING.teamsUrl),
+    entitlementUrl: scrubLegacyBillingHost(merged.entitlementUrl, DEFAULT_BILLING.entitlementUrl),
+  };
+}
+
+/** Apply MD_* URL env overrides over the current billing config (local account / sim). */
 export function applyBillingEnvOverrides(): void {
   const upgrade = (process.env.MD_UPGRADE_URL || '').trim();
+  const manage = (process.env.MD_MANAGE_URL || '').trim();
   const entitlement = (process.env.MD_ENTITLEMENT_URL || '').trim();
   const teams = (process.env.MD_TEAMS_URL || '').trim();
   if (upgrade) billing = { ...billing, upgradeUrl: upgrade };
+  if (manage) billing = { ...billing, manageUrl: manage };
   if (entitlement) billing = { ...billing, entitlementUrl: entitlement };
   if (teams) billing = { ...billing, teamsUrl: teams };
 }

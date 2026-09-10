@@ -35,11 +35,13 @@ export interface BillingConfig {
   entitlementUrl: string;
 }
 
+/** Defaults target the local `web/account` app. Override with MD_UPGRADE_URL /
+ *  MD_MANAGE_URL / MD_TEAMS_URL / MD_ENTITLEMENT_URL for staging or production. */
 export const DEFAULT_BILLING: BillingConfig = {
-  upgradeUrl: 'https://harnessmd.com/pro',
-  manageUrl: 'https://harnessmd.com/console',
-  teamsUrl: 'https://harnessmd.com/console',
-  entitlementUrl: '',
+  upgradeUrl: 'http://127.0.0.1:3000/pro/licence',
+  manageUrl: 'http://127.0.0.1:3000/pro/licence/manage',
+  teamsUrl: 'http://127.0.0.1:3000/console/welcome',
+  entitlementUrl: 'http://127.0.0.1:3000/api/entitlement',
 };
 
 export const TRIAL_DAYS = 14;

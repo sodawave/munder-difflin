@@ -424,6 +424,7 @@ export interface HarnessConfig {
   billing?: {
     upgradeUrl?: string;
     manageUrl?: string;
+    teamsUrl?: string;
     entitlementUrl?: string;
   };
   /** Classic multi-pane floor (default) vs compact Pro sidebar shell. */
@@ -499,9 +500,12 @@ const DEFAULTS: HarnessConfig = {
   // installs keep their persisted value.
   knowledgeGraph: { enabled: false },
   billing: {
-    upgradeUrl: 'https://harnessmd.com/pro',
-    manageUrl: 'https://harnessmd.com/console',
-    entitlementUrl: '',
+    // Local web/account by default — not the old harnessmd.com placeholder.
+    // Override with MD_UPGRADE_URL / MD_MANAGE_URL / MD_TEAMS_URL in production.
+    upgradeUrl: 'http://127.0.0.1:3000/pro/licence',
+    manageUrl: 'http://127.0.0.1:3000/pro/licence/manage',
+    teamsUrl: 'http://127.0.0.1:3000/console/welcome',
+    entitlementUrl: 'http://127.0.0.1:3000/api/entitlement',
   },
   ui: { shell: 'classic' },
 };

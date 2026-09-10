@@ -1,0 +1,107 @@
+.main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 24px 96px;
+}
+.main h1 {
+  text-align: center;
+  margin: 0;
+  font-size: 2rem;
+  letter-spacing: -0.03em;
+}
+.sub {
+  text-align: center;
+  color: var(--muted);
+  margin: 8px 0 28px;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 22px;
+  margin-bottom: 14px;
+}
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+.card h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+.head h2 { margin: 0; }
+.badge {
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--muted);
+  padding: 4px 10px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #9a9a9a;
+  display: inline-block;
+}
+.notice {
+  background: #fff7e0;
+  border: 1px solid #f0d78a;
+  border-radius: 12px;
+  padding: 10px 12px;
+  color: #6a5310;
+  margin: 0 0 16px;
+}
+.big {
+  margin: 10px 0 4px;
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+.muted { color: var(--muted); line-height: 1.5; margin: 0 0 10px; }
+.key { margin: 0 0 14px; }
+.key code, .muted code, .codeBox code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9em;
+}
+.secondaryBtn, .disabledBtn, .goldBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+.disabledBtn { opacity: 0.5; cursor: not-allowed; }
+.goldBtn {
+  background: var(--gold);
+  border-color: transparent;
+  color: var(--gold-ink);
+}
+.invoices {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.invoices li {
+  display: flex;
+  gap: 16px;
+  padding: 8px 0;
+  border-top: 1px solid var(--line);
+}
+.codeBox {
+  margin: 12px 0 0;
+  padding: 12px;
+  background: var(--soft);
+  border-radius: 10px;
+}
