@@ -22,8 +22,8 @@
 - Preserve `docs/superpowers/` at workspace root (do not bury it under `app/docs/`)
 - Keep `.git`, `.github/`, and root process files at root; product code only under `app/`
 - No git submodules
-- **Branch:** all work on **`DEV`**; never merge to **`main`** unless the human explicitly requests it (`main` = prod/deploy only)
-- No force-push; commit locally on `DEV`; push only if the user asks
+- **Branch:** all work on **`dev`**; never merge to **`main`** unless the human explicitly requests it (`main` = prod/deploy only)
+- No force-push; commit locally on `dev`; push only if the user asks
 - **Quality:** ordered modeling (spec → plan → implement → verify); tests or executable verification checklist; double confirmation before mass moves / BMAD install / merge to `main`; zero hallucination — verify claims with evidence before asserting them
 
 ---
@@ -302,8 +302,8 @@ Create `/Users/rafa/Projects/HARNESS/munder-difflin/AGENTS.md` with exactly this
 
 ## Branches
 
-- Work only on `DEV`.
-- `main` is production/deploy. Merge `DEV` → `main` only when the human explicitly asks.
+- Work only on `dev`.
+- `main` is production/deploy. Merge `dev` → `main` only when the human explicitly asks.
 - Do not merge to `main`, release, or deploy without that request.
 
 ## Language

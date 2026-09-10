@@ -68,13 +68,13 @@ munder-difflin/                    # same remote (sodawave/munder-difflin)
 
 | Branch | Role |
 |---|---|
-| `DEV` | Only branch for day-to-day development (scaffolding, BMAD, product work) |
+| `dev` | Only branch for day-to-day development (scaffolding, BMAD, product work) |
 | `main` | Production / deploy only |
 
 Rules:
 
-- All implementation work happens on `DEV`.
-- Merge `DEV` → `main` **only when the human explicitly requests it**.
+- All implementation work happens on `dev`.
+- Merge `dev` → `main` **only when the human explicitly requests it**.
 - Agents must not merge to `main`, cut releases, or treat `main` as a working branch without that explicit request.
 - Push to remotes only when the human asks.
 
@@ -103,9 +103,9 @@ npx bmad-method install
 1. `_bmad/` exists with expected modules; `manifest.yaml` present.
 2. `.cursor/commands/bmad/` exists; `/bmad-help` available after Cursor reload.
 3. Product still runnable from `app/` (e.g. `cd app && npm` scripts resolve; no BMAD files mixed into product `tools/`).
-4. Root `AGENTS.md` states the governance table above, plus branch model (`DEV` / `main`) and quality bar.
+4. Root `AGENTS.md` states the governance table above, plus branch model (`dev` / `main`) and quality bar.
 5. Root `README.md` explains workspace vs `app/`.
-6. Active development branch is `DEV`; `main` untouched by scaffolding commits except when the human later requests a merge.
+6. Active development branch is `dev`; `main` untouched by scaffolding commits except when the human later requests a merge.
 
 ## Risks and mitigations
 
@@ -124,9 +124,9 @@ npx bmad-method install
 - **First cycle:** install only (option C).
 - **Structure:** option A — single repo, product in `app/` (rejected submodule parent repo).
 - **Governance:** install + thin `AGENTS.md` layer (not themed custom agents).
-- **Branches:** work on `DEV`; `main` is prod; merge only on human request (confirmed 2026-09-10).
+- **Branches:** work on `dev`; `main` is prod; merge only on human request (confirmed 2026-09-10).
 - **Quality:** ordered modeling, tests/verification, double confirmation, evidence-backed claims (confirmed 2026-09-10).
 
 ## Approval
 
-Design approved in chat on 2026-09-10. Branch/quality canon confirmed 2026-09-10. Implementation proceeds on `DEV` via the written plan under `docs/superpowers/plans/` after explicit go-ahead for each large step.
+Design approved in chat on 2026-09-10. Branch/quality canon confirmed 2026-09-10. Implementation proceeds on `dev` via the written plan under `docs/superpowers/plans/` after explicit go-ahead for each large step.
