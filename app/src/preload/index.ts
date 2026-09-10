@@ -819,6 +819,31 @@ const api = {
     canUse: (feature: ProFeature): Promise<boolean> =>
       ipcRenderer.invoke('entitlements:canUse', feature),
   },
+
+  // ─── Stapler (Pro floating capture puck) ─────────────────────────────────
+  stapler: {
+    getState: (): Promise<{ enabled: boolean; canUse: boolean; invisible: boolean; open: boolean }> =>
+      ipcRenderer.invoke('stapler:getState'),
+    setEnabled: (on: boolean): Promise<{ ok: boolean; state: EntitlementState; canUse: boolean }> =>
+      ipcRenderer.invoke('stapler:setEnabled', on),
+    setInvisible: (on: boolean): Promise<{ ok: boolean; invisible: boolean }> =>
+      ipcRenderer.invoke('stapler:setInvisible', on),
+    beginCapture: (): Promise<{ ok: true } | { ok: false; error: string }> =>
+      ipcRenderer.invoke('stapler:beginCapture'),
+    finishCapture: (region: { x: number; y: number; width: number; height: number }): Promise<
+      { ok: true; path: string } | { ok: false; error: string }
+    > => ipcRenderer.invoke('stapler:finishCapture', region),
+    cancelCapture: (): Promise<{ ok: boolean }> => ipcRenderer.invoke('stapler:cancelCapture'),
+    sendToOrchestrator: (payload: { path: string; note?: string }): Promise<{ ok: boolean; error?: string }> =>
+      ipcRenderer.invoke('stapler:sendToOrchestrator', payload),
+    resizeNote: (): Promise<{ ok: boolean }> => ipcRenderer.invoke('stapler:resizeNote'),
+    resizePuck: (): Promise<{ ok: boolean }> => ipcRenderer.invoke('stapler:resizePuck'),
+    onCaptureReady: (cb: (info: { path: string }) => void): (() => void) => {
+      const listener = (_e: IpcRendererEvent, info: { path: string }) => cb(info);
+      ipcRenderer.on('stapler:captureReady', listener);
+      return () => ipcRenderer.removeListener('stapler:captureReady', listener);
+    },
+  },
   /** The remote model catalog — the agent model presets, fetched from the repo
    *  and cached, so a new model needs a JSON edit rather than a release. A null
    *  catalog means the renderer keeps the list compiled into the build. */

@@ -22,6 +22,7 @@ import {
   openUpgrade, openManage, setStaplerEnabled, canUse as entitlementsCanUse,
 } from './entitlements';
 import type { ProFeature } from '../shared/entitlements';
+import { initStapler, syncStaplerFromEntitlements } from './stapler';
 import { listDir, readFileText, readFileBinary, writeFileText, statAbs, expandTilde } from './fs';
 import { normalizeWeekly, weeklyDelayMs } from '../shared/weeklySchedule';
 import {
@@ -5339,6 +5340,14 @@ app.whenReady().then(() => {
   syncEntitlementsFromConfig();
   // Bootstrap the hive (if harnessHome is configured) and start the message router.
   bootstrapHiveServices();
+  // Stapler floating puck (Pro/trial only; created when enabled).
+  initStapler({
+    hive,
+    preload: join(__dirname, '../preload/index.js'),
+    isDev,
+    rendererDevUrl: process.env.ELECTRON_RENDERER_URL ?? '',
+  });
+  syncStaplerFromEntitlements();
   // Survive sleep/lock. macOS freezes libuv timers during true system sleep, so a
   // locked/idle/slept Mac stops firing schedules and can wedge PTYs. On wake we
   // re-arm the scheduler (catching up missed missions ONCE) + beats + keep-awake,

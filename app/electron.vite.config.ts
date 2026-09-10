@@ -73,7 +73,10 @@ export default defineConfig({
     root: resolve(__dirname, 'src/renderer'),
     build: {
       rollupOptions: {
-        input: { index: resolve(__dirname, 'src/renderer/index.html') }
+        input: {
+          index: resolve(__dirname, 'src/renderer/index.html'),
+          stapler: resolve(__dirname, 'src/renderer/stapler.html'),
+        }
       }
     },
     plugins: [react()],

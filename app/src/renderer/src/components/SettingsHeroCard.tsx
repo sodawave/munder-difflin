@@ -30,12 +30,14 @@ export function SettingsHeroCard() {
   const [plan, setPlan] = useState<PlanId>('community');
   const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
   const [canPro, setCanPro] = useState(false);
+  const [staplerOn, setStaplerOn] = useState(false);
 
   const refreshEntitlements = () => {
     void window.cth.entitlements.get().then((snap) => {
       setPlan(snap.plan);
       setTrialEndsAt(snap.state.trialEndsAt);
       setCanPro(snap.canPro);
+      setStaplerOn(!!snap.state.staplerEnabled && snap.canPro);
     }).catch(() => { /* keep defaults */ });
   };
 
@@ -140,6 +142,19 @@ export function SettingsHeroCard() {
             )}
             <PixelButton variant="ghost" size="sm" onClick={() => void window.cth.entitlements.refresh().then(() => refreshEntitlements())}>
               Refresh plan
+            </PixelButton>
+            <PixelButton
+              variant={staplerOn ? 'primary' : 'secondary'}
+              size="sm"
+              onClick={() => {
+                void window.cth.stapler.setEnabled(!staplerOn).then((r) => {
+                  setStaplerOn(!!r.state.staplerEnabled && r.canUse);
+                  refreshEntitlements();
+                });
+              }}
+              title={canPro ? 'Floating Stapler capture puck' : 'Requires Pro or trial'}
+            >
+              {staplerOn ? 'Stapler on' : 'Enable Stapler'}
             </PixelButton>
           </div>
         </div>
