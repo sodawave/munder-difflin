@@ -9,7 +9,7 @@ This repository is a **BMAD-method workspace**. The product lives in [`app/`](./
 | `app/` | Munder Difflin (Electron app) |
 | `_bmad/` | BMad Method modules (BMM, TEA, CIS) |
 | `_bmad-output/` | Planning & implementation artifacts (English) |
-| `.cursor/commands/bmad/` | Cursor slash commands |
+| `.agents/skills/` | Cursor BMAD skills (e.g. `bmad-help`) |
 | `docs/superpowers/` | Workspace design specs & implementation plans |
 | `AGENTS.md` | Process rules for coding agents |
 
@@ -25,4 +25,4 @@ See [`app/README.md`](./app/README.md) for product documentation.
 
 ## Method
 
-After BMAD is installed, use `/bmad-help` in Cursor. Chat may be in Spanish; formal BMAD documents are English.
+After BMAD is installed, invoke the `bmad-help` skill in Cursor. Chat may be in Spanish; formal BMAD documents are English.

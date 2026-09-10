@@ -3,7 +3,7 @@
 ## What this repo is
 
 - **Product:** Munder Difflin, located entirely under `app/`.
-- **Method:** BMad Method at the workspace root (`_bmad/`, Cursor commands under `.cursor/commands/bmad/`).
+- **Method:** BMad Method at the workspace root (`_bmad/`, Cursor skills under `.agents/skills/` including `bmad-help`).
 - BMAD is the **principal development process**. Office/hire agents inside the product are runtime features of Munder, not the build method.
 
 ## Branches
@@ -32,6 +32,6 @@
 
 ## Process
 
-- Prefer BMAD slash commands (`/bmad-help`, agents, workflows) for product work.
+- Prefer BMAD Cursor skills (start with `bmad-help`, then agents and workflows) for product work.
 - Superpowers and other local skills are optional helpers; they do not replace BMAD for planned product delivery.
 - Do not start a full Analyst → PRD cycle unless the human explicitly asks.
