@@ -42,4 +42,47 @@ Default flow: **work branch → test with evidence → human OK → merge to `de
 
 - Prefer BMAD Cursor skills (start with `bmad-help`, then agents and workflows) for product work.
 - Superpowers and other local skills are optional helpers; they do not replace BMAD for planned product delivery.
-- Do not start a full Analyst → PRD cycle unless the human explicitly asks.
+
+<!-- bmad:context -->
+<!-- Verified 2026-09-10 against b1439959. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
+
+## munder-difflin (product)
+
+Local-first Electron harness that turns coding-agent CLIs (`claude`, `codex`, `agy`, …) into coordinated “office” agents with PTY terminals, hive mail, and a Pixi floor. Stack: Electron + React + TypeScript + node-pty + xterm.js + Pixi. Product code and product docs live under `app/`. Planning artifacts: `_bmad-output/planning-artifacts/`. Contributor map: `app/docs/ARCHITECTURE.md`. Treat `app/SPEC.md` as historical MVP notes — prefer ARCHITECTURE.md + `app/src/` for as-built truth.
+
+## Policy
+
+- Never invent product behavior that contradicts `app/src/` — verify before asserting.
+- Never put BMAD method files under `app/`.
+- Never commit secrets (`.env`, signing keys); honor root and `app/` gitignores.
+- UI tokens and visual rules: derive from `app/DESIGN.md` / `app/src/renderer/src/design/`, do not invent a parallel palette.
+
+## Where things are
+
+- Electron main (PTY, hive, hooks, memory): `app/src/main/` — start at `index.ts`, `pty.ts`, `hive.ts`, `hooks.ts`.
+- Preload bridge: `app/src/preload/` → typed `window.cth`.
+- Renderer (floor, Command Center, terminals): `app/src/renderer/src/`.
+- Hive / multi-agent design intent: `app/HIVE.md` (code is truth for what is built).
+- Marketing/site + GitHub Pages content: `app/docs/` (CNAME `munderdiffl.in`).
+- Focused Node tests: `app/test/*.test.cjs` via `npm run test:focused` from `app/`.
+
+## Running and verifying
+
+- All npm scripts run from **`app/`** (`cd app`), not the workspace root.
+- After clone: `npm ci` in `app/` (postinstall rebuilds `node-pty` for Electron). On some macOS CLT installs, libc++ headers are incomplete — set `SDKROOT`/`CXXFLAGS` to the MacOSX SDK `c++/v1` path before rebuild (see stream A fix) or reinstall CLT.
+- Iterate with `npm run typecheck` and `npm run test:focused`; full Electron boot is `npm run dev`.
+- CI typecheck/build use `working-directory: app` (see `.github/workflows/ci.yml`).
+
+## Conventions that differ from defaults
+
+- Two data planes: **terminal** (`PtyManager` / node-pty IPC) and **event/hive** (hooks + on-disk mail/router) — do not collapse them into one channel.
+- Main process is the sole git committer for hive coordination; agents write files, main commits (see `app/HIVE.md`).
+- Design tokens live in `app/src/renderer/src/design/`; new UI must follow `app/DESIGN.md`.
+
+## Known pitfalls
+
+- `app/SPEC.md` still describes an early tmux-based terminal plane; as-built uses **node-pty** (`app/src/main/pty.ts`). Prefer ARCHITECTURE.md + code.
+- Absolute GitHub URLs under `main/docs/` are stale after the move — product assets are under `main/app/docs/` (runtime fetchers in `hero.ts` / `modelCatalog.ts` still need that fix).
+- Do not assume root `docs/` is the product site — it only holds `docs/superpowers/` methodology.
+
+<!-- /bmad:context -->
