@@ -315,6 +315,18 @@ Everything below is for contributors and for people who want to run an unrelease
   ```bash
   xcode-select --install
   ```
+  On some macOS / CLT installs the CLT `c++/v1` headers are incomplete and
+  `electron-rebuild` fails with `'functional' file not found`. `npm ci` /
+  `postinstall` runs [`tools/electron-rebuild-with-sdk.cjs`](./tools/electron-rebuild-with-sdk.cjs),
+  which points the compiler at the MacOSX SDK libc++ automatically. Manual
+  fallback if you rebuild by hand:
+  ```bash
+  export SDKROOT="$(xcrun --show-sdk-path)"
+  export CXXFLAGS="-isystem ${SDKROOT}/usr/include/c++/v1"
+  npx electron-rebuild -f
+  ```
+  Longer-term fix on the machine: reinstall Command Line Tools so
+  `/Library/Developer/CommandLineTools/usr/include/c++/v1/functional` exists.
 - At least one supported agent CLI on your `PATH` — **[Claude Code](https://claude.com/claude-code)**
   (`claude`, the default), **Antigravity** (`agy`), **OpenAI Codex** (`codex`), **xAI Grok** (`grok`),
   **Kimi Code** (`kimi`), **Gemini CLI** (`gemini`), **Qwen** (`qwen`), **OpenCode** (`opencode`),
@@ -326,11 +338,12 @@ Everything below is for contributors and for people who want to run an unrelease
 
 ### Install & run
 
+From this repository’s **workspace root** (product lives in `app/`):
+
 ```bash
-git clone https://github.com/chaitanyagiri/munder-difflin.git
-cd munder-difflin
-npm install        # postinstall rebuilds node-pty against Electron's ABI
-npm run dev        # launches the Electron app with hot reload
+cd app
+npm ci            # postinstall rebuilds node-pty against Electron's ABI
+npm run dev       # launches the Electron app with hot reload
 ```
 
 On first launch you'll go through the onboarding wizard, then land on the floor. Use **Add agent** to

@@ -21,7 +21,9 @@ npm ci
 npm run dev
 ```
 
-See [`app/README.md`](./app/README.md) for product documentation.
+On some macOS Command Line Tools installs, bare `electron-rebuild` fails looking for `<functional>`. `npm ci` in `app/` runs a Darwin SDK fallback automatically — details in [`app/README.md`](./app/README.md#prerequisites).
+
+See [`app/README.md`](./app/README.md) for full product documentation.
 
 ## Method
 

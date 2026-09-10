@@ -69,7 +69,7 @@ Local-first Electron harness that turns coding-agent CLIs (`claude`, `codex`, `a
 ## Running and verifying
 
 - All npm scripts run from **`app/`** (`cd app`), not the workspace root.
-- After clone: `npm ci` in `app/` (postinstall rebuilds `node-pty` for Electron). On some macOS CLT installs, libc++ headers are incomplete — set `SDKROOT`/`CXXFLAGS` to the MacOSX SDK `c++/v1` path before rebuild (see stream A fix) or reinstall CLT.
+- After clone: `npm ci` in `app/` (postinstall rebuilds `node-pty` for Electron via `tools/electron-rebuild-with-sdk.cjs`, which applies a Darwin SDK libc++ fallback when CLT headers are incomplete).
 - Iterate with `npm run typecheck` and `npm run test:focused`; full Electron boot is `npm run dev`.
 - CI typecheck/build use `working-directory: app` (see `.github/workflows/ci.yml`).
 
