@@ -31,6 +31,7 @@ import { FullscreenTerminal } from '@/components/FullscreenTerminal';
 import { TaskDetailOverlay } from '@/components/TaskDetailOverlay';
 import { IdePanel } from '@/ide/IdePanel';
 import { useHoldOptionToTalk } from '@/freeflow/holdOption';
+import { ProShell } from '@/components/ProShell';
 import brandLogo from '@brand/logo.png?url';
 
 // Injected at build time from package.json (see electron.vite.config.ts).
@@ -79,6 +80,19 @@ export function App() {
   const [quitWarn, setQuitWarn] = useState<{ ptyCount: number } | null>(null);
   const [closing, setClosing] = useState<ClosingTimeState | null>(null);
   const [vpWidth, setVpWidth] = useState<number>(window.innerWidth);
+  const [canPro, setCanPro] = useState(false);
+
+  useEffect(() => {
+    let alive = true;
+    const refresh = () => {
+      void window.cth.entitlements.get().then((s) => {
+        if (alive) setCanPro(s.canPro);
+      }).catch(() => { /* community floor still works */ });
+    };
+    refresh();
+    const t = window.setInterval(refresh, 30_000);
+    return () => { alive = false; window.clearInterval(t); };
+  }, []);
 
   // Deep link into Settings from anywhere in the tree. Settings' open state is
   // local to App, so a nested control (e.g. "set it now" beside a disabled Talk
@@ -310,9 +324,30 @@ export function App() {
         }}>
           {config.autoMode ? 'auto mode on' : 'auto mode off'}
         </span>
-        {/* v0.3.4: theme + fullscreen live HERE (top right), not buried in the
-            terminal header — and the theme darkens the whole app, terminals
-            included (design/theme.ts + tokens.css dark block). */}
+        <button
+          className="cth-titlebar-nodrag cth-tip"
+          onClick={() => {
+            const next = config.ui?.shell === 'pro' ? 'classic' : 'pro';
+            void window.cth.updateConfig({ ui: { ...config.ui, shell: next } }).then((c) => setConfig(c));
+            if (next === 'pro') {
+              void window.cth.entitlements.get().then((s) => setCanPro(s.canPro));
+            }
+          }}
+          data-tip={config.ui?.shell === 'pro' ? 'Switch to Classic floor' : 'Switch to Pro sidebar'}
+          aria-label="Toggle Pro sidebar shell"
+          style={{
+            marginLeft: 'auto',
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            height: 28, padding: '0 8px',
+            background: config.ui?.shell === 'pro' ? 'var(--cth-lilac-light)' : 'var(--cth-paper-100)',
+            boxShadow: 'inset 0 0 0 1px var(--cth-ink-300)',
+            border: 'none', borderRadius: 2, cursor: 'pointer',
+            color: 'var(--cth-ink-900)', fontSize: 11,
+            fontFamily: 'var(--cth-font-mono, monospace)', letterSpacing: '.06em',
+          }}
+        >
+          {config.ui?.shell === 'pro' ? 'PRO' : 'CLASSIC'}
+        </button>
         <button
           className="cth-titlebar-nodrag cth-tip"
           onClick={() => {
@@ -333,7 +368,6 @@ export function App() {
           data-tip={appThemeNow === 'dark' ? 'Light theme' : 'Dark theme'}
           aria-label="Toggle dark mode"
           style={{
-            marginLeft: 'auto',
             display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
             width: 28, height: 28, padding: 0,
             background: 'var(--cth-paper-100)',
@@ -395,9 +429,22 @@ export function App() {
       <div style={{
         flex: 1, minHeight: 0,
         display: 'flex',
-        padding: 16,
+        padding: config.ui?.shell === 'pro' ? 0 : 16,
         gap: 0
       }}>
+        {config.ui?.shell === 'pro' ? (
+          <ProShell
+            config={config}
+            canPro={canPro}
+            onEntitlementChange={() => {
+              void window.cth.entitlements.get().then((s) => setCanPro(s.canPro));
+            }}
+            onUseClassic={() => {
+              void window.cth.updateConfig({ ui: { ...config.ui, shell: 'classic' } }).then(setConfig);
+            }}
+          />
+        ) : (
+          <>
         <div style={{ flex: 1, minHeight: 0, minWidth: 0, position: 'relative' }}>
           <OfficeFloor />
           <MemoryPanel />
@@ -475,9 +522,11 @@ export function App() {
             </PixelPanel>
           )}
         </div>
+          </>
+        )}
       </div>
 
-      <AgentStrip config={config} />
+      {config.ui?.shell !== 'pro' && <AgentStrip config={config} />}
 
       {addAgentOpen && (
         <AddAgentModal
