@@ -1,26 +1,8 @@
 /**
  * The hero card at the top of Settings → General.
  *
- * One card that answers "what is this install, and what can I do about it" —
- * the running version, the plan it is on, and the handful of actions that do not
- * belong to any individual setting below (re-read the release notes, star, back
- * the project).
- *
- * Its contents come from docs/hero.json IN THIS REPO, fetched at runtime and
- * cached — so plan copy, a sponsor, or a one-line notice can change without
- * shipping a build. That payload is DATA, never markup: every field below is a
- * React text node, so it is escaped, and shared/heroPayload.ts validates types,
- * caps lengths and requires https before any of it reaches here.
- *
- * It renders instantly from the app's built-in defaults and upgrades in place
- * when the fetch lands, so the dialog never waits on the network and reads the
- * same offline. A sponsor slot with nothing in it renders NOTHING rather than a
- * "your logo here" placeholder.
- *
- * Since 0.4.5 it borrows the release drop's idiom (ink borders, a lilac
- * announcement block, a dark offer band) and carries the v0.5.0 Pro announcement and the
- * Founders' Wall offer, so the one card people see in Settings says the same
- * thing the release modal does. Plan label and blurb still come from hero.json.
+ * Shows live entitlement plan (community / trial / pro) plus Upgrade / Manage /
+ * Start trial actions. Marketing copy still comes from docs/hero.json.
  */
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -28,20 +10,35 @@ import { PixelButton } from './PixelButton';
 import { Icon } from './Icon';
 import { DEFAULT_HERO, type HeroPayload } from '@shared/heroPayload';
 import { manualDownloadUrl, pendingVersion, reduceStatus, type UpdateStatus } from '@shared/updateState';
+import type { PlanId } from '@shared/entitlements';
 
 const GITHUB_REPO_URL = 'https://github.com/chaitanyagiri/munder-difflin';
 const FOUNDERS_WALL_URL = 'https://munderdiffl.in/wall.html';
 const DISCORD_URL = 'https://discord.gg/SEDzP5ZPk5';
 
+function planBadgeLabel(plan: PlanId, fallback: string): string {
+  if (plan === 'pro') return 'Pro';
+  if (plan === 'trial') return 'Pro trial';
+  return fallback || 'Community';
+}
+
 export function SettingsHeroCard() {
   const { t } = useTranslation();
   const [version, setVersion] = useState<string | null>(null);
-  // Starts on the compiled-in defaults, so there is no empty frame or spinner
-  // while the fetch is in flight — it just fills in if anything changed.
   const [hero, setHero] = useState<HeroPayload>(DEFAULT_HERO);
-  /** Whatever release the updater knows about, so the card can offer the
-   *  manual download right where the version is shown. */
   const [status, setStatus] = useState<UpdateStatus | null>(null);
+  const [plan, setPlan] = useState<PlanId>('community');
+  const [trialEndsAt, setTrialEndsAt] = useState<string | null>(null);
+  const [canPro, setCanPro] = useState(false);
+
+  const refreshEntitlements = () => {
+    void window.cth.entitlements.get().then((snap) => {
+      setPlan(snap.plan);
+      setTrialEndsAt(snap.state.trialEndsAt);
+      setCanPro(snap.canPro);
+    }).catch(() => { /* keep defaults */ });
+  };
+
   useEffect(() => {
     const off = window.cth.onUpdateStatus?.((next) => setStatus((prev) => reduceStatus(prev, next)));
     void window.cth.updateCurrent?.().then((cur) => {
@@ -64,17 +61,20 @@ export function SettingsHeroCard() {
     window.cth.heroPayload()
       .then((r) => { if (alive) setHero(r.hero); })
       .catch(() => { /* defaults already rendered */ });
+    refreshEntitlements();
     return () => { alive = false; };
   }, []);
 
   const PLAN = hero.plan;
   const SPONSOR = hero.sponsor;
+  const liveLabel = planBadgeLabel(plan, PLAN.label);
 
-  /** Re-show the release notes. UpdateToast owns that surface — it holds the
-   *  last status and the drop renderer — so this asks rather than duplicating
-   *  it, via the same CustomEvent convention App uses for opening Settings. */
   const showReleaseNotes = () => {
     window.dispatchEvent(new CustomEvent('cth:show-release-notes'));
+  };
+
+  const startTrial = () => {
+    void window.cth.entitlements.beginTrial().then(() => refreshEntitlements());
   };
 
   const INK = 'var(--cth-ink-900)';
@@ -87,7 +87,6 @@ export function SettingsHeroCard() {
       border: `2px solid ${INK}`
     }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: 14 }}>
-        {/* Identity: name, the running version in plain sight, the plan. */}
         <div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
             <span style={{
@@ -100,9 +99,11 @@ export function SettingsHeroCard() {
             )}
             <span style={{
               fontFamily: MONO, fontSize: 9, letterSpacing: '.12em', textTransform: 'uppercase',
-              padding: '2px 7px', background: 'var(--cth-mint-light)',
-              boxShadow: 'inset 0 0 0 1px var(--cth-mint)', color: INK
-            }}>{PLAN.label}</span>
+              padding: '2px 7px',
+              background: canPro ? 'var(--cth-lilac-light)' : 'var(--cth-mint-light)',
+              boxShadow: canPro ? 'inset 0 0 0 1px var(--cth-lilac)' : 'inset 0 0 0 1px var(--cth-mint)',
+              color: INK
+            }}>{liveLabel}</span>
             {pending && (
               <>
                 <span style={{ flex: 1 }} />
@@ -117,11 +118,32 @@ export function SettingsHeroCard() {
             )}
           </div>
           <div style={{ marginTop: 6, fontSize: 12.5, lineHeight: 1.5, color: 'var(--cth-ink-700)', maxWidth: '64ch' }}>
-            {PLAN.blurb}
+            {plan === 'trial' && trialEndsAt
+              ? `Pro trial active until ${new Date(trialEndsAt).toLocaleDateString()}. ${PLAN.blurb}`
+              : plan === 'pro'
+                ? `Pro unlocked. ${PLAN.blurb}`
+                : PLAN.blurb}
+          </div>
+          <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            {!canPro && (
+              <PixelButton variant="primary" size="sm" onClick={startTrial}>
+                Start 14-day Pro trial
+              </PixelButton>
+            )}
+            <PixelButton variant="secondary" size="sm" onClick={() => void window.cth.entitlements.upgrade()}>
+              Upgrade
+            </PixelButton>
+            {canPro && (
+              <PixelButton variant="ghost" size="sm" onClick={() => void window.cth.entitlements.manage()}>
+                Manage plan
+              </PixelButton>
+            )}
+            <PixelButton variant="ghost" size="sm" onClick={() => void window.cth.entitlements.refresh().then(() => refreshEntitlements())}>
+              Refresh plan
+            </PixelButton>
           </div>
         </div>
 
-        {/* A one-line notice (an incident, a migration heads-up), when set. */}
         {hero.notice && (
           <div style={{
             padding: '8px 10px', fontSize: 12, lineHeight: 1.5, color: INK,
@@ -129,7 +151,6 @@ export function SettingsHeroCard() {
           }}>{hero.notice}</div>
         )}
 
-        {/* Pro announcement. Same block the release drop carries. */}
         <div style={{
           padding: '12px 14px',
           background: 'var(--cth-lilac-light)',
@@ -149,7 +170,6 @@ export function SettingsHeroCard() {
           </div>
         </div>
 
-        {/* Founders' Wall offer. */}
         <div style={{
           display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
           padding: '12px 14px',
@@ -175,13 +195,12 @@ export function SettingsHeroCard() {
             {t('settingsHero.seeTheWall')}
           </PixelButton>
           {PLAN.upgrade && (
-            <PixelButton variant="secondary" size="sm" onClick={() => void window.cth.openExternal(PLAN.upgrade!.url)}>
+            <PixelButton variant="secondary" size="sm" onClick={() => void window.cth.entitlements.upgrade()}>
               {PLAN.upgrade.label}
             </PixelButton>
           )}
         </div>
 
-        {/* Sponsor — only when there is one. */}
         {SPONSOR && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
@@ -201,7 +220,6 @@ export function SettingsHeroCard() {
           </div>
         )}
 
-        {/* Actions that belong to the app rather than to any setting below. */}
         <div style={{
           display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center',
           paddingTop: 12, borderTop: `2px solid ${INK}`

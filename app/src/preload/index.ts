@@ -10,6 +10,7 @@ import type { ToolStatus } from '../shared/toolCatalog';
 export type { ToolStatus } from '../shared/toolCatalog';
 import type { HeroPayload } from '../shared/heroPayload';
 export type { HeroPayload } from '../shared/heroPayload';
+import type { BillingConfig, EntitlementState, PlanId, ProFeature } from '../shared/entitlements';
 import type { ModelCatalog } from '../shared/modelCatalogPayload';
 export type { ModelCatalog, CatalogModel } from '../shared/modelCatalogPayload';
 import type { HookEvent } from '../shared/hookEvents';
@@ -331,6 +332,16 @@ export interface HarnessConfig {
   providerBaseUrls?: Partial<Record<AgentProvider, string>>;
   /** Per-CLI-provider default model slug, used to pre-fill the model picker. */
   providerDefaultModels?: Partial<Record<AgentProvider, string>>;
+  /** External billing URLs (mirrors main). Checkout stays outside the app. */
+  billing?: {
+    upgradeUrl?: string;
+    manageUrl?: string;
+    entitlementUrl?: string;
+  };
+  /** classic | pro shell (mirrors main). */
+  ui?: {
+    shell?: 'classic' | 'pro';
+  };
 }
 
 export interface MemoryStatus {
@@ -790,6 +801,24 @@ const api = {
   /** Settings hero payload — plan + sponsor, fetched from the repo and cached. */
   heroPayload: (force?: boolean): Promise<{ hero: HeroPayload; fetchedAt: number; stale: boolean }> =>
     ipcRenderer.invoke('hero:payload', force),
+
+  // ─── Pro entitlements (local plan + external checkout; no payment IDs) ─────
+  entitlements: {
+    get: (): Promise<{
+      state: EntitlementState;
+      plan: PlanId;
+      canPro: boolean;
+      billing: BillingConfig;
+    }> => ipcRenderer.invoke('entitlements:get'),
+    beginTrial: (): Promise<EntitlementState> => ipcRenderer.invoke('entitlements:beginTrial'),
+    refresh: (): Promise<EntitlementState> => ipcRenderer.invoke('entitlements:refresh'),
+    upgrade: (): Promise<void> => ipcRenderer.invoke('entitlements:upgrade'),
+    manage: (): Promise<void> => ipcRenderer.invoke('entitlements:manage'),
+    setStaplerEnabled: (on: boolean): Promise<EntitlementState> =>
+      ipcRenderer.invoke('entitlements:setStaplerEnabled', on),
+    canUse: (feature: ProFeature): Promise<boolean> =>
+      ipcRenderer.invoke('entitlements:canUse', feature),
+  },
   /** The remote model catalog — the agent model presets, fetched from the repo
    *  and cached, so a new model needs a JSON edit rather than a release. A null
    *  catalog means the renderer keeps the list compiled into the build. */

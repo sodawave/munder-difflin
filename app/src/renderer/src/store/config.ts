@@ -151,6 +151,16 @@ export interface HarnessConfig {
   orgTrigger?: OrgTriggerConfig;
   /** One-time guard for the main-process triggers migration; read-only here. */
   triggersMigratedV1?: boolean;
+  /** External billing URLs (mirrors main). Checkout stays outside the app. */
+  billing?: {
+    upgradeUrl?: string;
+    manageUrl?: string;
+    entitlementUrl?: string;
+  };
+  /** classic | pro shell (mirrors main). */
+  ui?: {
+    shell?: 'classic' | 'pro';
+  };
 }
 
 /** The Sonnet model with the 1M-token context window — used for Michael's prep

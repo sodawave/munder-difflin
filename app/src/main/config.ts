@@ -417,6 +417,19 @@ export interface HarnessConfig {
   /** Never condense a file smaller than this; also the section-trigger byte floor.
    *  DECIDED: 16 KB. */
   reflectMinBytes?: number;
+
+  // ─── Pro entitlements + UI shell (local plan; checkout is external) ─────────
+  /** External billing URLs. Payment identifiers never enter the app — only plan
+   *  refresh via optional entitlementUrl + install id. */
+  billing?: {
+    upgradeUrl?: string;
+    manageUrl?: string;
+    entitlementUrl?: string;
+  };
+  /** Classic multi-pane floor (default) vs compact Pro sidebar shell. */
+  ui?: {
+    shell?: 'classic' | 'pro';
+  };
 }
 
 const DEFAULTS: HarnessConfig = {
@@ -484,7 +497,13 @@ const DEFAULTS: HarnessConfig = {
   // v0.3.4 fix: default OFF, matching the field's own documentation ("Default
   // OFF / dark until enabled") — the true default contradicted it. Existing
   // installs keep their persisted value.
-  knowledgeGraph: { enabled: false }
+  knowledgeGraph: { enabled: false },
+  billing: {
+    upgradeUrl: 'https://harnessmd.com/pro',
+    manageUrl: 'https://harnessmd.com/console',
+    entitlementUrl: '',
+  },
+  ui: { shell: 'classic' },
 };
 
 function configPath(): string {

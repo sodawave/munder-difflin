@@ -17,6 +17,11 @@ import {
   readConfig, writeConfig, setAgentTokenCap, resetConfig, onConfigWritten, ensureHarnessHome, ensureClaudePermissionsAccepted,
   modelForRole, OPS_STANDUP_MISSION, HEARTBEAT_MISSION, COMPACT_MAINTENANCE_MISSION, type HarnessConfig, type ScheduledMission
 } from './config';
+import {
+  setEntitlementsHome, setBillingConfig, getEntitlementSnapshot, beginTrial, refreshEntitlements,
+  openUpgrade, openManage, setStaplerEnabled, canUse as entitlementsCanUse,
+} from './entitlements';
+import type { ProFeature } from '../shared/entitlements';
 import { listDir, readFileText, readFileBinary, writeFileText, statAbs, expandTilde } from './fs';
 import { normalizeWeekly, weeklyDelayMs } from '../shared/weeklySchedule';
 import {
@@ -3208,6 +3213,8 @@ ipcMain.handle('config:update', (_evt, patch: Partial<HarnessConfig>) => {
     console.log('[hive] harnessHome configured — bootstrapping hive services');
     try { bootstrapHiveServices(); } catch (e) { console.error('[hive] bootstrap after onboarding:', e); }
   }
+  // Keep entitlement persistence pointed at the current hive home + billing URLs.
+  syncEntitlementsFromConfig(next);
   return next;
 });
 ipcMain.handle('config:setAgentTokenCap', (_evt, agentId: unknown, tokenCap: unknown) =>
@@ -3523,6 +3530,18 @@ ipcMain.handle('hive:patchAgentRole', (_evt, id: unknown, role: unknown) => {
  *  release. Validated in shared/heroPayload before it reaches the renderer. */
 ipcMain.handle('hero:payload', async (_evt, force: unknown) =>
   loadHero(join(app.getPath('userData'), 'hero.json'), { force: force === true }));
+
+// ─── IPC: Pro entitlements (local plan; external checkout — no payment IDs) ──
+ipcMain.handle('entitlements:get', () => getEntitlementSnapshot());
+ipcMain.handle('entitlements:beginTrial', () => beginTrial());
+ipcMain.handle('entitlements:refresh', () => refreshEntitlements());
+ipcMain.handle('entitlements:upgrade', () => openUpgrade());
+ipcMain.handle('entitlements:manage', () => openManage());
+ipcMain.handle('entitlements:setStaplerEnabled', (_evt, on: unknown) => setStaplerEnabled(on === true));
+ipcMain.handle('entitlements:canUse', (_evt, feature: unknown) => {
+  const f = feature === 'stapler' || feature === 'proShell' ? (feature as ProFeature) : 'proShell';
+  return entitlementsCanUse(f);
+});
 
 // ─── IPC: model catalog (remote data, cached) ───────────────────────────────
 /** The agent model presets, fetched from docs/model-catalog.json on main so a
@@ -5041,6 +5060,12 @@ ipcMain.handle('workers:stop', (_evt, workerId: string): { ok: boolean; error?: 
   return { ok: true };
 });
 
+/** Point entitlement persistence at the current hive home and billing URLs. */
+function syncEntitlementsFromConfig(cfg: HarnessConfig = readConfig()): void {
+  setEntitlementsHome(cfg.harnessHome);
+  setBillingConfig(cfg.billing);
+}
+
 /** Start every hive-bound background service against the current harnessHome.
  *  Called on boot, and again to recover in place if a folder-change copy fails
  *  (config:changeHome tears these down before copying). No-op without a home. */
@@ -5310,6 +5335,8 @@ app.whenReady().then(() => {
   // never restarts on its own. Falls back to a notify-only releases/latest
   // check where native updating isn't possible (win-portable, dev-ish builds).
   initAutoUpdater(() => liveWebContents());
+  // Local Pro entitlements (trial / plan cache under harness home).
+  syncEntitlementsFromConfig();
   // Bootstrap the hive (if harnessHome is configured) and start the message router.
   bootstrapHiveServices();
   // Survive sleep/lock. macOS freezes libuv timers during true system sleep, so a
