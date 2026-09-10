@@ -89,4 +89,5 @@ See `epics.md`. Summary:
 
 ## After this plan ships
 
-BMAD cycle for Private Network behind `canUse('network')`.
+1. BMAD cycle for Private Network behind `canUse('network')` (optional sequencing — may trail web/).
+2. **Next major cycle (remember):** professional / production `web/` — real presentation site + user backend that **proxies licenses ↔ Stripe-paid entitlements** (replaces local `web/license-sim/` for prod). Do this only after the Teams license point in the app is done.
