@@ -8,6 +8,9 @@ const {
   requirePro,
   startTrial,
   defaultEntitlementState,
+  applyRemoteEntitlement,
+  isAllowedEntitlementUrl,
+  withInstallId,
   TRIAL_DAYS,
 } = require('./entitlements.logic.cjs');
 
@@ -52,5 +55,31 @@ describe('entitlements', () => {
     const s = startTrial(defaultEntitlementState('x'), now);
     const plan = effectivePlan(s, now);
     assert.equal(requirePro(plan, 'stapler'), true);
+  });
+
+  it('Refresh plan applies remote pro from license sim payload', () => {
+    const now = Date.parse('2026-09-10T14:00:00.000Z');
+    const before = defaultEntitlementState('install-a');
+    const after = applyRemoteEntitlement(before, { plan: 'pro', trialEndsAt: null }, now);
+    assert.equal(after.plan, 'pro');
+    assert.equal(after.installId, 'install-a');
+    assert.equal(after.lastRefreshAt, '2026-09-10T14:00:00.000Z');
+    assert.equal(requirePro(effectivePlan(after, now), 'proShell'), true);
+  });
+
+  it('entitlement URL allowlist permits https and loopback http only', () => {
+    assert.equal(isAllowedEntitlementUrl('https://harnessmd.com/entitlement'), true);
+    assert.equal(isAllowedEntitlementUrl('http://127.0.0.1:8787/entitlement'), true);
+    assert.equal(isAllowedEntitlementUrl('http://localhost:8787/entitlement'), true);
+    assert.equal(isAllowedEntitlementUrl('http://evil.example/entitlement'), false);
+    assert.equal(isAllowedEntitlementUrl('ftp://127.0.0.1/x'), false);
+  });
+
+  it('Upgrade URL appends installId once', () => {
+    const u = withInstallId('http://127.0.0.1:8787/', 'abc-123');
+    assert.match(u, /[?&]installId=abc-123/);
+    const again = withInstallId(u, 'other');
+    assert.match(again, /installId=abc-123/);
+    assert.doesNotMatch(again, /installId=other/);
   });
 });
