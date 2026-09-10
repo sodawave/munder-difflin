@@ -171,7 +171,32 @@
     "foundersWallTitle": "在 Founders' Wall 上吗？",
     "foundersWallBody": "免费获得一个月的 Munder Difflin Pro，此后年度套餐享 5 折。仅限前 100 位上榜用户。",
     "seeTheWall": "查看榜单",
-    "joinDiscord": "加入 Discord"
+    "joinDiscord": "加入 Discord",
+    "startTrial": "开始 14 天 Pro 试用",
+    "upgrade": "升级",
+    "managePlan": "管理套餐",
+    "refreshPlan": "刷新套餐",
+    "staplerOn": "Stapler 已开启",
+    "enableStapler": "启用 Stapler",
+    "staplerTitle": "浮动 Stapler 截图球",
+    "staplerNeedsPro": "需要 Pro 或试用",
+    "screenRecordingHint": "macOS：首次截图会请求屏幕录制权限。若捕获失败，请在“系统设置 → 隐私与安全性”中授权。",
+    "trialUntil": "Pro 试用有效至 {{date}}。{{blurb}}",
+    "proUnlocked": "已解锁 Pro。{{blurb}}"
+  },
+  "proShell": {
+    "title": "PRO 侧栏",
+    "needsPro": "紧凑 Pro 壳（编排器、智能体、任务、收件箱、自动化、记忆——一次一面）需要 Pro 套餐或有效试用。",
+    "startTrial": "开始 14 天试用",
+    "upgrade": "升级",
+    "backClassic": "返回经典办公室",
+    "classicShort": "CL",
+    "orchestrator": "编排器",
+    "agents": "智能体",
+    "tasks": "任务",
+    "inbox": "收件箱",
+    "automations": "自动化",
+    "memory": "记忆"
   },
   "officeTheme": {
     "title": "办公室主题",

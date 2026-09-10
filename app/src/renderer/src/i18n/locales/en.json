@@ -171,7 +171,32 @@
     "foundersWallTitle": "On the Founders' Wall?",
     "foundersWallBody": "A month of Munder Difflin Pro free, then 50% off the annual plan. For the first 100 people on the wall.",
     "seeTheWall": "see the wall",
-    "joinDiscord": "join Discord"
+    "joinDiscord": "join Discord",
+    "startTrial": "Start 14-day Pro trial",
+    "upgrade": "Upgrade",
+    "managePlan": "Manage plan",
+    "refreshPlan": "Refresh plan",
+    "staplerOn": "Stapler on",
+    "enableStapler": "Enable Stapler",
+    "staplerTitle": "Floating Stapler capture puck",
+    "staplerNeedsPro": "Requires Pro or trial",
+    "screenRecordingHint": "macOS: the first screenshot asks for Screen Recording permission. Grant it in System Settings → Privacy & Security if capture fails.",
+    "trialUntil": "Pro trial active until {{date}}. {{blurb}}",
+    "proUnlocked": "Pro unlocked. {{blurb}}"
+  },
+  "proShell": {
+    "title": "PRO SIDEBAR",
+    "needsPro": "The compact Pro shell (orchestrator, agents, tasks, inbox, automations, memory — one at a time) needs a Pro plan or an active trial.",
+    "startTrial": "Start 14-day trial",
+    "upgrade": "Upgrade",
+    "backClassic": "Back to Classic floor",
+    "classicShort": "CL",
+    "orchestrator": "Orchestrator",
+    "agents": "Agents",
+    "tasks": "Tasks",
+    "inbox": "Inbox",
+    "automations": "Automations",
+    "memory": "Memory"
   },
   "officeTheme": {
     "title": "Office Theme",

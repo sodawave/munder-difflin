@@ -290,12 +290,12 @@ async function captureRegion(x: number, y: number, width: number, height: number
     thumbnailSize: screen.getPrimaryDisplay().size,
   });
   if (!sources.length) {
-    throw new Error('Screen capture unavailable. On macOS, grant Screen Recording permission for Munder Difflin in System Settings.');
+            throw new Error('Screen capture unavailable. On macOS, grant Screen Recording permission for Munder Difflin in System Settings → Privacy & Security → Screen Recording, then restart the app.');
   }
   const primary = sources[0];
   const img = primary.thumbnail;
   if (img.isEmpty()) {
-    throw new Error('Empty capture — check Screen Recording permission.');
+    throw new Error('Empty capture — check Screen Recording permission in System Settings, then retry.');
   }
 
   const display = screen.getPrimaryDisplay();

@@ -46,8 +46,9 @@ export interface HeroPayload {
  *  fails, so the card is never empty and never waits on the network to render. */
 export const DEFAULT_HERO: HeroPayload = {
   plan: {
-    label: 'Local',
-    blurb: 'Every agent runs on your machine, in your folders, under your own keys. No seat limit, nothing metered.'
+    label: 'Community',
+    blurb: 'Full Classic floor on your machine. Pro trial unlocks the compact sidebar and Stapler; checkout stays on the web — the app never sees card numbers.',
+    upgrade: { label: 'Get Pro', url: 'https://harnessmd.com/pro' }
   },
   sponsor: null,
   notice: null

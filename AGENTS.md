@@ -84,5 +84,6 @@ Local-first Electron harness that turns coding-agent CLIs (`claude`, `codex`, `a
 - `app/SPEC.md` still describes an early tmux-based terminal plane; as-built uses **node-pty** (`app/src/main/pty.ts`). Prefer ARCHITECTURE.md + code.
 - Absolute GitHub URLs for product assets use `main/app/docs/`; remote catalog/hero fetchers try `app/docs/` then fall back to legacy `docs/` on upstream.
 - Do not assume root `docs/` is the product site — it only holds `docs/superpowers/` methodology.
+- **Pro** is a local entitlement (`app/src/main/entitlements.ts`) plus external checkout via `shell.openExternal` — the app never collects or sends payment identifiers. Teams / seat console remains a future BMAD cycle. Dev unlock: `MD_PRO_DEV_UNLOCK=1`.
 
 <!-- /bmad:context -->

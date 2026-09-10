@@ -3,6 +3,7 @@
  * Community users see an upgrade CTA instead of an empty shell.
  */
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useStore, selectedAgent } from '@/store/store';
 import type { HarnessConfig } from '@/store/config';
 import { CommandCenterPanel } from './CommandCenterPanel';
@@ -17,13 +18,13 @@ import { Icon } from './Icon';
 
 export type ProSurface = 'orchestrator' | 'agents' | 'tasks' | 'inbox' | 'automations' | 'memory';
 
-const SURFACES: { id: ProSurface; label: string; icon: Parameters<typeof Icon>[0]['name'] }[] = [
-  { id: 'orchestrator', label: 'Orchestrator', icon: 'terminal' },
-  { id: 'agents', label: 'Agents', icon: 'mcp' },
-  { id: 'tasks', label: 'Tasks', icon: 'check' },
-  { id: 'inbox', label: 'Inbox', icon: 'bell' },
-  { id: 'automations', label: 'Automations', icon: 'clock' },
-  { id: 'memory', label: 'Memory', icon: 'sparkle' },
+const SURFACES: { id: ProSurface; labelKey: string; icon: Parameters<typeof Icon>[0]['name'] }[] = [
+  { id: 'orchestrator', labelKey: 'proShell.orchestrator', icon: 'terminal' },
+  { id: 'agents', labelKey: 'proShell.agents', icon: 'mcp' },
+  { id: 'tasks', labelKey: 'proShell.tasks', icon: 'check' },
+  { id: 'inbox', labelKey: 'proShell.inbox', icon: 'bell' },
+  { id: 'automations', labelKey: 'proShell.automations', icon: 'clock' },
+  { id: 'memory', labelKey: 'proShell.memory', icon: 'sparkle' },
 ];
 
 export function ProShell(props: {
@@ -32,6 +33,7 @@ export function ProShell(props: {
   onUseClassic: () => void;
   onEntitlementChange?: () => void;
 }) {
+  const { t } = useTranslation();
   const { canPro, onUseClassic, onEntitlementChange } = props;
   const [surface, setSurface] = useState<ProSurface>('orchestrator');
   const agents = useStore((s) => s.agents);
@@ -51,23 +53,22 @@ export function ProShell(props: {
         flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: 24, background: 'var(--cth-cream-100)',
       }}>
-        <PixelPanel variant="dialog" title="PRO SIDEBAR" noPadding style={{ width: 420, maxWidth: '100%' }}>
+        <PixelPanel variant="dialog" title={t('proShell.title')} noPadding style={{ width: 420, maxWidth: '100%' }}>
           <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <p style={{ margin: 0, fontSize: 13, lineHeight: 1.5, color: 'var(--cth-ink-700)' }}>
-              The compact Pro shell (orchestrator, agents, tasks, inbox, automations, memory — one at a time)
-              needs a Pro plan or an active trial.
+              {t('proShell.needsPro')}
             </p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <PixelButton variant="primary" size="sm" onClick={() => {
                 void window.cth.entitlements.beginTrial().then(() => onEntitlementChange?.());
               }}>
-                Start 14-day trial
+                {t('proShell.startTrial')}
               </PixelButton>
               <PixelButton variant="secondary" size="sm" onClick={() => void window.cth.entitlements.upgrade()}>
-                Upgrade
+                {t('proShell.upgrade')}
               </PixelButton>
               <PixelButton variant="ghost" size="sm" onClick={onUseClassic}>
-                Back to Classic floor
+                {t('proShell.backClassic')}
               </PixelButton>
             </div>
           </div>
@@ -89,12 +90,13 @@ export function ProShell(props: {
       }} aria-label="Pro surfaces">
         {SURFACES.map((s) => {
           const active = surface === s.id;
+          const label = t(s.labelKey);
           return (
             <button
               key={s.id}
               type="button"
-              title={s.label}
-              aria-label={s.label}
+              title={label}
+              aria-label={label}
               aria-current={active ? 'page' : undefined}
               onClick={() => setSurface(s.id)}
               style={{
@@ -113,8 +115,8 @@ export function ProShell(props: {
         <span style={{ flex: 1 }} />
         <button
           type="button"
-          title="Classic floor"
-          aria-label="Classic floor"
+          title={t('proShell.backClassic')}
+          aria-label={t('proShell.backClassic')}
           onClick={onUseClassic}
           style={{
             width: 44, height: 44, padding: 0, fontSize: 10, fontFamily: 'var(--cth-font-mono, monospace)',
@@ -124,7 +126,7 @@ export function ProShell(props: {
             color: 'var(--cth-ink-700)',
           }}
         >
-          CL
+          {t('proShell.classicShort')}
         </button>
       </nav>
 
@@ -136,7 +138,7 @@ export function ProShell(props: {
           fontSize: 11, letterSpacing: '.08em', textTransform: 'uppercase',
           color: 'var(--cth-ink-700)',
         }}>
-          {SURFACES.find((s) => s.id === surface)?.label ?? surface}
+          {t(SURFACES.find((s) => s.id === surface)?.labelKey ?? 'proShell.orchestrator')}
         </div>
         <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
           {surface === 'orchestrator' && (

@@ -171,7 +171,32 @@
     "foundersWallTitle": "على حائط المؤسِّسين؟",
     "foundersWallBody": "شهر مجاني من Munder Difflin Pro، ثم خصم 50% على الخطة السنوية. لأول 100 شخص على الحائط.",
     "seeTheWall": "شاهد الحائط",
-    "joinDiscord": "انضم إلى Discord"
+    "joinDiscord": "انضم إلى Discord",
+    "startTrial": "ابدأ تجربة Pro لـ 14 يومًا",
+    "upgrade": "ترقَّ",
+    "managePlan": "إدارة الخطة",
+    "refreshPlan": "حدِّث الخطة",
+    "staplerOn": "Stapler قيد التشغيل",
+    "enableStapler": "فعِّل Stapler",
+    "staplerTitle": "قرص Stapler العائم للالتقاط",
+    "staplerNeedsPro": "يتطلّب Pro أو تجربة",
+    "screenRecordingHint": "macOS: يطلب أول لقطة شاشة إذن تسجيل الشاشة. امنحه من إعدادات النظام → الخصوصية والأمان إن فشل الالتقاط.",
+    "trialUntil": "تجربة Pro نشطة حتى {{date}}. {{blurb}}",
+    "proUnlocked": "Pro مفتوح. {{blurb}}"
+  },
+  "proShell": {
+    "title": "شريط Pro الجانبي",
+    "needsPro": "يحتاج الغلاف المدمج لـ Pro (المنسّق، الوكلاء، المهام، الوارد، الأتمتة، الذاكرة — شاشة واحدة في كل مرة) إلى خطة Pro أو تجربة نشطة.",
+    "startTrial": "ابدأ تجربة 14 يومًا",
+    "upgrade": "ترقَّ",
+    "backClassic": "العودة إلى الأرضية الكلاسيكية",
+    "classicShort": "CL",
+    "orchestrator": "المنسّق",
+    "agents": "الوكلاء",
+    "tasks": "المهام",
+    "inbox": "الوارد",
+    "automations": "الأتمتة",
+    "memory": "الذاكرة"
   },
   "officeTheme": {
     "title": "سِمة المكتب",

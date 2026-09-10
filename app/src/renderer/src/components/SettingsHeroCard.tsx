@@ -121,27 +121,30 @@ export function SettingsHeroCard() {
           </div>
           <div style={{ marginTop: 6, fontSize: 12.5, lineHeight: 1.5, color: 'var(--cth-ink-700)', maxWidth: '64ch' }}>
             {plan === 'trial' && trialEndsAt
-              ? `Pro trial active until ${new Date(trialEndsAt).toLocaleDateString()}. ${PLAN.blurb}`
+              ? t('settingsHero.trialUntil', {
+                  date: new Date(trialEndsAt).toLocaleDateString(),
+                  blurb: PLAN.blurb,
+                })
               : plan === 'pro'
-                ? `Pro unlocked. ${PLAN.blurb}`
+                ? t('settingsHero.proUnlocked', { blurb: PLAN.blurb })
                 : PLAN.blurb}
           </div>
           <div style={{ marginTop: 10, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {!canPro && (
               <PixelButton variant="primary" size="sm" onClick={startTrial}>
-                Start 14-day Pro trial
+                {t('settingsHero.startTrial')}
               </PixelButton>
             )}
             <PixelButton variant="secondary" size="sm" onClick={() => void window.cth.entitlements.upgrade()}>
-              Upgrade
+              {t('settingsHero.upgrade')}
             </PixelButton>
             {canPro && (
               <PixelButton variant="ghost" size="sm" onClick={() => void window.cth.entitlements.manage()}>
-                Manage plan
+                {t('settingsHero.managePlan')}
               </PixelButton>
             )}
             <PixelButton variant="ghost" size="sm" onClick={() => void window.cth.entitlements.refresh().then(() => refreshEntitlements())}>
-              Refresh plan
+              {t('settingsHero.refreshPlan')}
             </PixelButton>
             <PixelButton
               variant={staplerOn ? 'primary' : 'secondary'}
@@ -152,10 +155,13 @@ export function SettingsHeroCard() {
                   refreshEntitlements();
                 });
               }}
-              title={canPro ? 'Floating Stapler capture puck' : 'Requires Pro or trial'}
+              title={canPro ? t('settingsHero.staplerTitle') : t('settingsHero.staplerNeedsPro')}
             >
-              {staplerOn ? 'Stapler on' : 'Enable Stapler'}
+              {staplerOn ? t('settingsHero.staplerOn') : t('settingsHero.enableStapler')}
             </PixelButton>
+          </div>
+          <div style={{ marginTop: 8, fontSize: 11.5, lineHeight: 1.45, color: 'var(--cth-ink-500)', maxWidth: '64ch' }}>
+            {t('settingsHero.screenRecordingHint')}
           </div>
         </div>
 

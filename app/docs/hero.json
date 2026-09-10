@@ -1,8 +1,12 @@
 {
-  "_comment": "Settings → General hero card. Edited here and fetched by the app at runtime, so plan copy and sponsors change WITHOUT shipping a build. Data only — every field renders as escaped text, never as markup. Unknown fields are ignored; anything malformed falls back to the app's built-in defaults. URLs must be https.",
+  "_comment": "Settings → General hero card. Edited here and fetched by the app at runtime, so plan copy and sponsors change WITHOUT shipping a build. Data only — every field renders as escaped text, never as markup. Unknown fields are ignored; anything malformed falls back to the app's built-in defaults. URLs must be https. Live plan badge in-app comes from EntitlementStore; this file is marketing copy + upgrade CTA.",
   "plan": {
-    "label": "Local",
-    "blurb": "Every agent runs on your machine, in your folders, under your own keys. No seat limit, nothing metered."
+    "label": "Community",
+    "blurb": "Full Classic floor on your machine. Pro trial unlocks the compact sidebar and Stapler; checkout stays on the web — the app never sees card numbers.",
+    "upgrade": {
+      "label": "Get Pro",
+      "url": "https://harnessmd.com/pro"
+    }
   },
   "sponsor": null,
   "notice": null
