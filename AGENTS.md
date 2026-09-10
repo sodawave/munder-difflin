@@ -85,5 +85,6 @@ Local-first Electron harness that turns coding-agent CLIs (`claude`, `codex`, `a
 - Absolute GitHub URLs for product assets use `main/app/docs/`; remote catalog/hero fetchers try `app/docs/` then fall back to legacy `docs/` on upstream.
 - Do not assume root `docs/` is the product site — it only holds `docs/superpowers/` methodology.
 - **Pro** is a local entitlement (`app/src/main/entitlements.ts`) plus external checkout via `shell.openExternal` — the app never collects or sends payment identifiers. Teams / seat console remains a future BMAD cycle. Dev unlock: `MD_PRO_DEV_UNLOCK=1`.
+- Local Pro **license sim** lives under `web/license-sim/` (not `app/`). Point the Electron process at it with `MD_UPGRADE_URL` / `MD_ENTITLEMENT_URL` (see that folder’s README). The 14-day trial skips redeem; paid activation is key → `installId` → Refresh plan.
 
 <!-- /bmad:context -->
