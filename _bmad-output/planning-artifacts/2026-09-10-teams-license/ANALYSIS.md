@@ -1,6 +1,6 @@
 ---
 title: Teams license — analysis (separate from Pro)
-status: analysis
+status: final
 created: 2026-09-10
 ---
 
@@ -60,19 +60,23 @@ Current app (`app/src/shared/entitlements.ts` + `app/src/main/entitlements.ts`):
 3. External console owns billing; Electron owns gates + local persistence.
 4. Local simulator stays outside `app/` (extend `web/license-sim/` or sibling) for Teams demos.
 
-## Open questions (must lock in the plan)
+## Open questions → locked (2026-09-10)
 
-1. Does `teams` **include** Pro features (shell + Stapler) always, or can a seat be network-only? (Marketing: everything in Pro for every seat → **teams ⇒ pro features**.)
-2. Is the redeem artifact still an `MDS-…` key per seat, or a seat invite / device pairing token from the console?
-3. Minimum entitlement JSON for Teams Refresh?
-4. Does in-app Pro trial ever grant Teams network, or is network console-trial only?
-5. Merge path: extend `PlanId` with `'teams'` vs separate `tier` + `features` map?
+| # | Question | Lock |
+|---|----------|------|
+| 1 | Does `teams` include Pro features? | **Yes** — always. |
+| 2 | Redeem artifact shape? | Per-seat **`MDS-…` key** (sim + compatible with Pro family). Invite tokens later. |
+| 3 | Minimum Refresh JSON? | `{ plan, trialEndsAt?, orgId?, seatId?, seatLabel?, networkEnabled? }` |
+| 4 | Does in-app Pro trial grant network? | **No** — network only for `plan === 'teams'`. |
+| 5 | `PlanId` vs tier map? | Extend **`PlanId` with `'teams'`**. |
+
+See `PLAN.md` (`status: ready`) and `epics.md`.
 
 ## Recommendation
 
 Treat **Teams license** as a thin extension of the Pro entitlement plane:
 
 - Add `teams` plan (implies Pro feature gates).
-- Extend remote entitlement schema with org/seat metadata + `networkEnabled` (or infer from plan).
-- Wire console Upgrade/Start-team URLs + Refresh; extend local sim for multi-seat demo keys.
-- **Do not** build sealed network / relay in the same license MVP — gate a stub or future epic behind `plan === 'teams'`.
+- Extend remote entitlement schema with org/seat metadata + `networkEnabled`.
+- Wire console Teams URL + Refresh; extend `web/license-sim/` for multi-seat demo keys.
+- **Do not** build sealed network / relay in the same license MVP — gate future work behind `canUse('network')`.
