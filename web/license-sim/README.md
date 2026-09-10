@@ -3,6 +3,9 @@
 Standalone mock of harnessmd.com “Enter your license key” + entitlement refresh.
 Lives **outside** `app/` — the Electron product only talks to it over HTTP.
 
+> **Production path:** `web/account/` is the Pro subscription hub + Stripe↔licence proxy. This sim remains the local stand-in for desktop Refresh-plan without Stripe.
+
+
 ## Quick start
 
 ```bash
@@ -50,7 +53,7 @@ See [`.env.example`](./.env.example) for the same values.
 Demo keys:
 
 - **Pro:** `MDS-00000-00000-00000`
-- **Teams seats:** `MDS-TEAM0-00000-00001` … `00005` (org `org_demo`, cap 5)
+- **Teams seats:** `MDS-TEAM0-00000-00001` … `00005` (org `org_demo`, cap 5). `00006` exists only to exercise the seat-cap error.
 
 One machine per key (re-redeem moves the bind). State persists in `.data.json` (gitignored).
 

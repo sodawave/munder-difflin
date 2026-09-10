@@ -1,23 +1,31 @@
 ---
 title: Follow-on — production web/ (after Teams license)
-status: deferred
+status: done_pro_account
 created: 2026-09-10
-blocked_by: Teams license app cycle (T1–T4)
+updated: 2026-09-10
 ---
 
 # Follow-on: production `web/`
 
-**Do not start until** the in-app Teams license point (entitlements + local sim) is finished.
+## Done this cycle (Pro account)
 
-## Intent (owner reminder 2026-09-10)
+Shipped under `web/account/` (Next.js):
 
-Ship a professional / production `web/` that includes:
+1. **Marketing entry** — public site stays [munderdiffl.in](https://munderdiffl.in/) (`app/docs`); account app links in/out.
+2. **Pro subscription UI** — hub, Pro dashboard, licence buy, licence manage (billing, sign-in code, machine, invoices, download).
+3. **Backend** — email session, Stripe Checkout + Customer Portal + webhook (dev activate without keys), mint `MDS-…` keys, bind `installId`, `GET /api/entitlement?installId=`, `POST /api/license/redeem`.
+4. **Teams stub** — `/console/welcome` + `/console/teams-soon` only.
 
-1. **License ↔ Stripe proxy** — bridges paid Stripe checkout to minted/redeemable license entitlements (Pro + Teams seats), replacing the local-only `web/license-sim/` for real customers.
-2. **Real presentation site** — marketing / product presentation (not the Electron app).
-3. **User backend** — accounts / console surface that owns plan, seats, card, invoices (app still never sees payment identifiers).
+## Still next
 
-## Notes
+- Full Teams org console / seat purchasing UI
+- Production deploy + real Stripe keys
+- Magic-link / OTP auth (replace local email session)
 
-- Keep the Electron privacy rule: no payment ids in the desktop app; Refresh plan / entitlement GET only.
-- `web/license-sim/` remains the local stand-in until this cycle lands.
+## Desktop wiring
+
+```bash
+export MD_UPGRADE_URL=http://127.0.0.1:3000/pro/licence
+export MD_ENTITLEMENT_URL=http://127.0.0.1:3000/api/entitlement
+export MD_TEAMS_URL=http://127.0.0.1:3000/console/welcome
+```
