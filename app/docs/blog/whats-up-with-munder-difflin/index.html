@@ -224,7 +224,7 @@ when it was safe to type into a terminal. Now a single drain loop owns that deci
 automation never wipes your draft or closes your menus. A user draft or an open picker holds
 delivery (visible as a <strong>“your draft”</strong> badge), and expired blocks type <em>after</em> your text
 instead of over it. The whole contract is written down in
-<a href="https://github.com/chaitanyagiri/munder-difflin/blob/main/docs/message-queue.md"><code>docs/message-queue.md</code></a>.</p>
+<a href="https://github.com/chaitanyagiri/munder-difflin/blob/main/app/docs/message-queue.md"><code>docs/message-queue.md</code></a>.</p>
 <p>v0.3.5 closed the last hole in it: pausing floor-wide delivery used to strand every queued
 message with no override and no explanation. Each row now gets a <strong>send now</strong> link that
 bypasses only the pause gate, and the composer says exactly why the queue is being held.</p>

@@ -82,7 +82,7 @@ Local-first Electron harness that turns coding-agent CLIs (`claude`, `codex`, `a
 ## Known pitfalls
 
 - `app/SPEC.md` still describes an early tmux-based terminal plane; as-built uses **node-pty** (`app/src/main/pty.ts`). Prefer ARCHITECTURE.md + code.
-- Absolute GitHub URLs under `main/docs/` are stale after the move — product assets are under `main/app/docs/` (runtime fetchers in `hero.ts` / `modelCatalog.ts` still need that fix).
+- Absolute GitHub URLs for product assets use `main/app/docs/`; remote catalog/hero fetchers try `app/docs/` then fall back to legacy `docs/` on upstream.
 - Do not assume root `docs/` is the product site — it only holds `docs/superpowers/` methodology.
 
 <!-- /bmad:context -->

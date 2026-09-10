@@ -7,7 +7,7 @@
  * as "keep the catalog compiled into this build".
  *
  * The point of this file: shipping a model was a build. Now it is an edit to
- * docs/model-catalog.json on main, which every installed copy picks up within
+ * app/docs/model-catalog.json on main, which every installed copy picks up within
  * the TTL. The baked catalog stays the floor, so the pickers are never empty and
  * never wait on the network.
  */
@@ -16,8 +16,11 @@ import { dirname } from 'node:path';
 import { getText } from './fetchText';
 import { parseModelCatalog, type ModelCatalog } from '../shared/modelCatalogPayload';
 
-const CATALOG_URL =
-  'https://raw.githubusercontent.com/chaitanyagiri/munder-difflin/main/docs/model-catalog.json';
+const CATALOG_URLS = [
+  'https://raw.githubusercontent.com/chaitanyagiri/munder-difflin/main/app/docs/model-catalog.json',
+  // Upstream may still publish at docs/ until it adopts the app/ layout.
+  'https://raw.githubusercontent.com/chaitanyagiri/munder-difflin/main/docs/model-catalog.json',
+];
 
 /** Models ship on a human timescale, and a stale list costs the user nothing —
  *  every command field in the app stays editable. Six hours matches the hero
@@ -56,7 +59,17 @@ export async function loadModelCatalog(
   }
 
   try {
-    const body = await getText(CATALOG_URL, { timeoutMs: 8000 });
+    let body: string | null = null;
+    let lastErr: unknown;
+    for (const url of CATALOG_URLS) {
+      try {
+        body = await getText(url, { timeoutMs: 8000 });
+        break;
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    if (body == null) throw lastErr ?? new Error('catalog fetch failed');
     // Parse the JSON and the SHAPE separately: valid JSON that is not a catalog
     // must fall back, not reach a picker as undefined rows.
     const catalog = parseModelCatalog(JSON.parse(body));

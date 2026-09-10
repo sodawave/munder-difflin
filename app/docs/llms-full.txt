@@ -63,7 +63,7 @@ drives the CLI logins/subscriptions the user already has.
 - v0.3.7 auto-update write-up: https://munderdiffl.in/blog/why-our-auto-update-never-ran/
 - v0.3.5 launch post: https://munderdiffl.in/blog/launching-munder-difflin-v0-3-5/
 - Changelog: https://github.com/chaitanyagiri/munder-difflin/blob/main/CHANGELOG.md
-- Message-queue delivery contract: https://github.com/chaitanyagiri/munder-difflin/blob/main/docs/message-queue.md
+- Message-queue delivery contract: https://github.com/chaitanyagiri/munder-difflin/blob/main/app/docs/message-queue.md
 
 ## Guides by topic
 

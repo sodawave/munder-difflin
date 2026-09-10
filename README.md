@@ -28,3 +28,7 @@ See [`app/README.md`](./app/README.md) for full product documentation.
 ## Method
 
 After BMAD is installed, invoke the `bmad-help` skill in Cursor. Chat may be in Spanish; formal BMAD documents are English.
+
+## GitHub Pages
+
+Product site sources live in [`app/docs/`](./app/docs/) (CNAME `munderdiffl.in`). Deploy uses [`.github/workflows/pages.yml`](./.github/workflows/pages.yml) on push to `main`. In GitHub → Settings → Pages, set Source to **GitHub Actions** (branch `/docs` cannot serve `app/docs/`).

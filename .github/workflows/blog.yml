@@ -1,9 +1,9 @@
 name: Build blog
 
 # Rebuilds the Eleventy blog into app/docs/blog whenever the blog source changes,
-# and commits the generated output. The site itself is served by the existing
-# GitHub Pages "deploy from branch" setup (app/docs/ + CNAME) — this workflow only
-# regenerates the static files under app/docs/blog, it does NOT change Pages config.
+# and commits the generated output. Site deploy is handled by pages.yml (GitHub
+# Actions → Pages from app/docs/). This workflow only regenerates static files
+# under app/docs/blog; it does NOT configure Pages.
 #
 # Trigger is scoped to app/blog/** so the commit it makes (under app/docs/blog) never
 # re-triggers the workflow. Safe to run manually via workflow_dispatch.

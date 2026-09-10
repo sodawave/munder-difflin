@@ -12,8 +12,11 @@ import { dirname } from 'node:path';
 import { getText } from './fetchText';
 import { parseHeroPayload, DEFAULT_HERO, type HeroPayload } from '../shared/heroPayload';
 
-const HERO_URL =
-  'https://raw.githubusercontent.com/chaitanyagiri/munder-difflin/main/docs/hero.json';
+const HERO_URLS = [
+  'https://raw.githubusercontent.com/chaitanyagiri/munder-difflin/main/app/docs/hero.json',
+  // Upstream may still publish at docs/ until it adopts the app/ layout.
+  'https://raw.githubusercontent.com/chaitanyagiri/munder-difflin/main/docs/hero.json',
+];
 /** Plan copy and sponsors change on a human timescale. */
 const TTL_MS = 6 * 60 * 60 * 1000;
 
@@ -31,7 +34,17 @@ export async function loadHero(
   }
 
   try {
-    const body = await getText(HERO_URL, { timeoutMs: 8000 });
+    let body: string | null = null;
+    let lastErr: unknown;
+    for (const url of HERO_URLS) {
+      try {
+        body = await getText(url, { timeoutMs: 8000 });
+        break;
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    if (body == null) throw lastErr ?? new Error('hero fetch failed');
     // Parse the JSON and the SHAPE separately: valid JSON that is not a hero
     // payload must still degrade to defaults rather than render as undefined.
     const hero = parseHeroPayload(JSON.parse(body));
