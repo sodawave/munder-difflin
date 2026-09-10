@@ -66,23 +66,29 @@ munder-difflin/                    # same remote (sodawave/munder-difflin)
 
 ## Branch model (canonical)
 
+Default flow: **work branch → develop → test with evidence → human OK → merge to `dev`**. Do not develop directly on `dev` or `main` unless the human explicitly agrees (e.g. trivial hotfix).
+
 | Branch | Role |
 |---|---|
-| `dev` | Only branch for day-to-day development (scaffolding, BMAD, product work) |
+| `feat/*`, `fix/*`, `chore/*`, `docs/*`, `spec/*`, … | Day-to-day work — one branch per unit of change |
+| `dev` | Integration only — receives merges after develop → test → OK |
 | `main` | Production / deploy only |
 
 Rules:
 
-- All implementation work happens on `dev`.
+- Prefer branch names aligned with conventional commits (`feat/…` + `feat: …`, `fix/…` + `fix: …`, etc.).
+- When work is driven by a formal spec, prefer `spec/YYYY-MM-DD-<slug>` (or a `feat/…` linked to that spec) — one option of the same default pattern, not the only branch type.
 - Merge `dev` → `main` **only when the human explicitly requests it**.
-- Agents must not merge to `main`, cut releases, or treat `main` as a working branch without that explicit request.
+- Agents must not merge to `main`, cut releases, or treat `main`/`dev` as a working branch for new features without that explicit request.
 - Push to remotes only when the human asks.
+
+Bootstrap note: the initial BMAD workspace scaffolding landed directly on `dev` before this per-branch default was locked; new work follows the table above.
 
 ## Quality bar (canonical)
 
 - **Ordered modeling:** spec → plan → implementation → verification with evidence.
 - **Tests:** every behavior-changing task includes tests; pure scaffolding uses an executable verification checklist (real commands, real exit codes).
-- **Double confirmation:** large or irreversible steps (mass moves, BMAD install, merge to `main`) require explicit human OK before execution.
+- **Double confirmation:** large or irreversible steps (mass moves, BMAD install, merge to `dev` or `main`) require explicit human OK before execution.
 - **Zero hallucination:** never assert that a path exists, a command passed, or a tool is installed unless verified in the current session (command output, file read, or equivalent evidence).
 - **Done means evidence:** report paths, exit codes, and test/command output — not confidence.
 
@@ -103,9 +109,9 @@ npx bmad-method install
 1. `_bmad/` exists with expected modules; `manifest.yaml` present.
 2. `.cursor/commands/bmad/` exists; `/bmad-help` available after Cursor reload.
 3. Product still runnable from `app/` (e.g. `cd app && npm` scripts resolve; no BMAD files mixed into product `tools/`).
-4. Root `AGENTS.md` states the governance table above, plus branch model (`dev` / `main`) and quality bar.
+4. Root `AGENTS.md` states the governance table above, plus branch model (work branches → `dev` → `main`) and quality bar.
 5. Root `README.md` explains workspace vs `app/`.
-6. Active development branch is `dev`; `main` untouched by scaffolding commits except when the human later requests a merge.
+6. Integration branch is `dev`; `main` untouched by day-to-day work except when the human later requests a merge from `dev`.
 
 ## Risks and mitigations
 
@@ -124,9 +130,9 @@ npx bmad-method install
 - **First cycle:** install only (option C).
 - **Structure:** option A — single repo, product in `app/` (rejected submodule parent repo).
 - **Governance:** install + thin `AGENTS.md` layer (not themed custom agents).
-- **Branches:** work on `dev`; `main` is prod; merge only on human request (confirmed 2026-09-10).
+- **Branches:** default work branch (`feat`/`fix`/`docs`/`spec`/…) → test → OK → `dev`; `main` is prod; merge to `main` only on human request (updated 2026-09-10).
 - **Quality:** ordered modeling, tests/verification, double confirmation, evidence-backed claims (confirmed 2026-09-10).
 
 ## Approval
 
-Design approved in chat on 2026-09-10. Branch/quality canon confirmed 2026-09-10. Implementation proceeds on `dev` via the written plan under `docs/superpowers/plans/` after explicit go-ahead for each large step.
+Design approved in chat on 2026-09-10. Branch/quality canon confirmed 2026-09-10; per-work-branch default clarified the same day. New work proceeds on topic branches merging into `dev` after explicit OK.

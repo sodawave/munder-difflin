@@ -22,9 +22,9 @@
 - Preserve `docs/superpowers/` at workspace root (do not bury it under `app/docs/`)
 - Keep `.git`, `.github/`, and root process files at root; product code only under `app/`
 - No git submodules
-- **Branch:** all work on **`dev`**; never merge to **`main`** unless the human explicitly requests it (`main` = prod/deploy only)
-- No force-push; commit locally on `dev`; push only if the user asks
-- **Quality:** ordered modeling (spec → plan → implement → verify); tests or executable verification checklist; double confirmation before mass moves / BMAD install / merge to `main`; zero hallucination — verify claims with evidence before asserting them
+- **Branch:** default = work branch (`feat`/`fix`/`chore`/`docs`/`spec`/…) → test → human OK → merge to **`dev`**; never merge to **`main`** unless the human explicitly requests it (`main` = prod/deploy only)
+- No force-push; commit on the work branch; push only if the user asks
+- **Quality:** ordered modeling (spec → plan → implement → verify); tests or executable verification checklist; double confirmation before mass moves / BMAD install / merge to `dev` or `main`; zero hallucination — verify claims with evidence before asserting them
 
 ---
 

@@ -8,9 +8,17 @@
 
 ## Branches
 
-- Work only on `dev`.
-- `main` is production/deploy. Merge `dev` → `main` only when the human explicitly asks.
-- Do not merge to `main`, release, or deploy without that request.
+Default flow: **work branch → test with evidence → human OK → merge to `dev`**. Do not develop directly on `dev` or `main` unless the human explicitly agrees (e.g. trivial hotfix).
+
+| Branch | Role |
+|--------|------|
+| `feat/*`, `fix/*`, `chore/*`, `docs/*`, `spec/*`, … | Day-to-day work — one branch per unit of change |
+| `dev` | Integration only — receives merges after develop → test → OK |
+| `main` | Production / deploy — merge from `dev` only when the human explicitly asks |
+
+- Prefer branch names aligned with conventional commits (`feat/…` + `feat: …`, `fix/…` + `fix: …`, etc.).
+- When work is driven by a formal spec, a `spec/YYYY-MM-DD-<slug>` branch (or a `feat/…` linked to that spec) is the default option — not the only branch type.
+- Do not merge to `main`, release, or deploy without an explicit human request.
 
 ## Language
 
