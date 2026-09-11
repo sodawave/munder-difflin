@@ -8,9 +8,11 @@ const MAIN_ASSETS = [
   ['src/main/slack-trigger.cjs', 'out/main/slack-trigger.cjs'],
   // Knowledge Graph core (pure-JS, no native deps) — required by knowledge.ts.
   ['src/main/kg-core.cjs', 'out/main/kg-core.cjs'],
-  // Additive network bridge cores (required by deviceSeal.ts / topics.ts).
-  ['src/main/network/deviceSealCore.cjs', 'out/main/network/deviceSealCore.cjs'],
-  ['src/main/network/topics.cjs', 'out/main/network/topics.cjs'],
+  // Additive network bridge cores — electron-vite inlines the TS façades into
+  // out/main/index.js, so require('./deviceSealCore.cjs') resolves next to it
+  // (same pattern as kg-core.cjs), not under out/main/network/.
+  ['src/main/network/deviceSealCore.cjs', 'out/main/deviceSealCore.cjs'],
+  ['src/main/network/topics.cjs', 'out/main/topics.cjs'],
 ];
 
 for (const [fromRel, toRel] of MAIN_ASSETS) {

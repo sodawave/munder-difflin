@@ -1,6 +1,7 @@
 /**
  * Typed façade over deviceSealCore.cjs for Electron main.
  * Keys persist under a path chosen by the caller (harnessHome or userData) — never in git.
+ * AEAD is AES-256-GCM (Electron OpenSSL has no ChaCha20-Poly1305).
  */
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
