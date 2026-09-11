@@ -43,6 +43,13 @@ Default flow: **work branch → test with evidence → human OK → merge to `de
 - Prefer BMAD Cursor skills (start with `bmad-help`, then agents and workflows) for product work.
 - Superpowers and other local skills are optional helpers; they do not replace BMAD for planned product delivery.
 
+## BMAD process (required, generic)
+
+- **BMAD must be installed** at the workspace root (`_bmad/`, skills under `.agents/skills/`). If missing, install/adopt via BMAD (`bmad-help` / `bmad-project-context`). Do **not** invent a parallel methodology; do **not** install BMAD under `app/`.
+- Planned product work follows: **debate → architecture spine + memlog → spec or epics/stories → implement → verify with evidence**. Do not skip to large architectural changes without that record.
+- Before inventing or changing architecture, read the relevant `_bmad-output/planning-artifacts/**/ARCHITECTURE-SPINE.md` and `.memlog.md`.
+- Honor each decision’s **Binds / Prevents / Rule** and any **Deferred / Rejected** list. Those negatives exist so agents do **not** reopen closed design paths on their own. Overturning them requires a new adopted spine decision — not a drive-by refactor.
+
 <!-- bmad:context -->
 <!-- Verified 2026-09-10 against b1439959. Managed by bmad-project-context; edits inside this block are replaced on refresh. Keep anything you want preserved outside the markers. -->
 
