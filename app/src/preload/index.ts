@@ -823,6 +823,23 @@ const api = {
       ipcRenderer.invoke('entitlements:canUse', feature),
   },
 
+  // ─── Additive Teams Private Network bridge (MQTT sealed; CAP-1..3) ────────
+  network: {
+    getPublicBundle: (): Promise<{
+      deviceId: string;
+      x25519PublicKey: string;
+      ed25519PublicKey: string;
+    } | null> => ipcRenderer.invoke('network:getPublicBundle'),
+    sendRemote: (arg: {
+      peerDeviceId: string;
+      peerX25519PublicKey: string;
+      orgId?: string;
+      message: Record<string, unknown>;
+    }): Promise<{ ok: boolean; error?: string; sealedBytes?: number }> =>
+      ipcRenderer.invoke('network:sendRemote', arg),
+    sync: (): Promise<{ ok: boolean; error?: string }> => ipcRenderer.invoke('network:sync'),
+  },
+
   // ─── Stapler (Pro floating capture puck) ─────────────────────────────────
   stapler: {
     getState: (): Promise<{ enabled: boolean; canUse: boolean; invisible: boolean; open: boolean }> =>
