@@ -1,7 +1,7 @@
 /**
- * Device seal core (CJS) — X25519 ECDH + ChaCha20-Poly1305 + Ed25519 signature.
- * Product marketing cites XChaCha20; Node OpenSSL exposes IETF ChaCha20-Poly1305
- * (12-byte nonce). Same sealed-box shape; swap AEAD later without changing callers.
+ * Device seal core (CJS) — X25519 ECDH + AES-256-GCM + Ed25519 signature.
+ * Electron's bundled OpenSSL reports no ChaCha20-Poly1305 (openssl 0.0.0 /
+ * BoringSSL subset); AES-256-GCM is available in both Node and Electron.
  *
  * Wire blob is base64(version || senderEdPub || ephX25519Pub || nonce || ciphertext||tag || sig).
  * Never log plaintext. Tests assert subject/body absent from the wire buffer.
@@ -10,12 +10,13 @@
 
 const crypto = require('node:crypto');
 
-const VERSION = 1;
+const VERSION = 2;
 const ED_PUB_LEN = 32;
 const X_PUB_LEN = 32;
 const NONCE_LEN = 12;
 const SIG_LEN = 64;
 const HEADER_LEN = 1 + ED_PUB_LEN + X_PUB_LEN + NONCE_LEN;
+const AEAD = 'aes-256-gcm';
 
 /** @typedef {{ deviceId: string, ed25519: { publicKey: string, privateKey: string }, x25519: { publicKey: string, privateKey: string } }} DeviceIdentity */
 
@@ -77,9 +78,9 @@ function seal(plaintext, recipientX25519PubB64, sender) {
   const shared = crypto.diffieHellman({ privateKey: eph.privateKey, publicKey: recipientPub });
   const ephPubDer = eph.publicKey.export({ type: 'spki', format: 'der' });
   const ephPubRaw = ephPubDer.subarray(ephPubDer.length - 32);
-  const key = crypto.hkdfSync('sha256', shared, Buffer.alloc(0), Buffer.from('md-seal-v1'), 32);
+  const key = crypto.hkdfSync('sha256', shared, Buffer.alloc(0), Buffer.from('md-seal-v2'), 32);
   const nonce = crypto.randomBytes(NONCE_LEN);
-  const cipher = crypto.createCipheriv('chacha20-poly1305', Buffer.from(key), nonce, { authTagLength: 16 });
+  const cipher = crypto.createCipheriv(AEAD, Buffer.from(key), nonce, { authTagLength: 16 });
   const enc = Buffer.concat([cipher.update(plain), cipher.final()]);
   const tag = cipher.getAuthTag();
   const ciphertext = Buffer.concat([enc, tag]);
@@ -119,11 +120,11 @@ function unseal(sealedB64, recipient) {
     privateKey: xPrivateKeyFromB64(recipient.x25519.privateKey),
     publicKey: ephPub,
   });
-  const key = crypto.hkdfSync('sha256', shared, Buffer.alloc(0), Buffer.from('md-seal-v1'), 32);
+  const key = crypto.hkdfSync('sha256', shared, Buffer.alloc(0), Buffer.from('md-seal-v2'), 32);
   if (ciphertext.length < 16) throw new Error('ciphertext too short');
   const tag = ciphertext.subarray(ciphertext.length - 16);
   const enc = ciphertext.subarray(0, ciphertext.length - 16);
-  const decipher = crypto.createDecipheriv('chacha20-poly1305', Buffer.from(key), nonce, { authTagLength: 16 });
+  const decipher = crypto.createDecipheriv(AEAD, Buffer.from(key), nonce, { authTagLength: 16 });
   decipher.setAuthTag(tag);
   const plaintext = Buffer.concat([decipher.update(enc), decipher.final()]);
   return { plaintext, senderEd25519PublicKey: b64(senderEdPub) };
@@ -138,6 +139,7 @@ function wireContainsUtf8(wireB64, needle) {
 
 module.exports = {
   VERSION,
+  AEAD,
   generateDeviceIdentity,
   seal,
   unseal,
