@@ -1,7 +1,7 @@
 ---
 id: SPEC-mqtt-additive-bridge
 title: MQTT Additive Sealed Bridge
-status: ready
+status: verified
 created: 2026-09-11
 companions:
   - conventions.md

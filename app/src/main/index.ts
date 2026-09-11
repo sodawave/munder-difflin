@@ -23,6 +23,7 @@ import {
 } from './entitlements';
 import type { ProFeature } from '../shared/entitlements';
 import { initStapler, syncStaplerFromEntitlements } from './stapler';
+import { NetworkBridge } from './network';
 import { listDir, readFileText, readFileBinary, writeFileText, statAbs, expandTilde } from './fs';
 import { normalizeWeekly, weeklyDelayMs } from '../shared/weeklySchedule';
 import {
@@ -247,6 +248,11 @@ const hive = new HiveManager(
     try { wc.send(channel, payload); return true; } catch { return false; }
   }
 );
+/** Additive Teams Private Network bridge (SPEC mqtt-additive-bridge). Idle unless canNetwork. */
+const networkBridge = new NetworkBridge({
+  identityDir: () => readConfig().harnessHome,
+  hive: () => hive,
+});
 // #7C — operator control state (pause/gate/steer/halt), read by the HookServer
 // when deciding hook returns.
 const control = new ControlRegistry();
@@ -3549,14 +3555,46 @@ ipcMain.handle('hero:payload', async (_evt, force: unknown) =>
 // ─── IPC: Pro entitlements (local plan; external checkout — no payment IDs) ──
 ipcMain.handle('entitlements:get', () => getEntitlementSnapshot());
 ipcMain.handle('entitlements:beginTrial', () => beginTrial());
-ipcMain.handle('entitlements:refresh', () => refreshEntitlements());
+ipcMain.handle('entitlements:refresh', async () => {
+  const state = await refreshEntitlements();
+  try { networkBridge.sync(); } catch (e) { console.warn('[network-bridge] sync after refresh:', e); }
+  return state;
+});
 ipcMain.handle('entitlements:upgrade', () => openUpgrade());
 ipcMain.handle('entitlements:manage', () => openManage());
 ipcMain.handle('entitlements:openTeams', () => openTeams());
 ipcMain.handle('entitlements:setStaplerEnabled', (_evt, on: unknown) => setStaplerEnabled(on === true));
 ipcMain.handle('entitlements:canUse', (_evt, feature: unknown) => {
-  const f = feature === 'stapler' || feature === 'proShell' ? (feature as ProFeature) : 'proShell';
+  const f = feature === 'stapler' || feature === 'proShell' || feature === 'network'
+    ? (feature as ProFeature)
+    : 'proShell';
   return entitlementsCanUse(f);
+});
+
+// ─── IPC: additive network bridge (Teams + canNetwork only) ─────────────────
+ipcMain.handle('network:getPublicBundle', () => networkBridge.getPublicBundle());
+ipcMain.handle('network:sendRemote', (_evt, arg: unknown) => {
+  if (!arg || typeof arg !== 'object') return { ok: false, error: 'invalid args' };
+  const a = arg as {
+    peerDeviceId?: unknown;
+    peerX25519PublicKey?: unknown;
+    orgId?: unknown;
+    message?: unknown;
+  };
+  if (typeof a.peerDeviceId !== 'string' || typeof a.peerX25519PublicKey !== 'string') {
+    return { ok: false, error: 'peerDeviceId and peerX25519PublicKey required' };
+  }
+  if (!a.message || typeof a.message !== 'object') return { ok: false, error: 'message required' };
+  return networkBridge.sendRemote({
+    peerDeviceId: a.peerDeviceId,
+    peerX25519PublicKey: a.peerX25519PublicKey,
+    orgId: typeof a.orgId === 'string' ? a.orgId : undefined,
+    message: a.message as Partial<HiveMessage>,
+  });
+});
+ipcMain.handle('network:sync', () => {
+  try { networkBridge.sync(); return { ok: true }; }
+  catch (e) { return { ok: false, error: e instanceof Error ? e.message : String(e) }; }
 });
 
 // ─── IPC: model catalog (remote data, cached) ───────────────────────────────
@@ -5094,6 +5132,8 @@ function bootstrapHiveServices(): void {
   // builder reads this, so an agent spawned earlier would never learn it.
   hive.setRuntimeInfo({ version: app.getVersion(), packaged: app.isPackaged, appPath: app.getAppPath() });
   hive.setOrchestratorMaySpawn(readConfig().orchestratorMaySpawn === true);
+  // Teams Private Network bridge — no-op unless canNetwork (AD-9 / CAP-3).
+  try { networkBridge.sync(); } catch (e) { console.warn('[network-bridge] sync on bootstrap:', e); }
   // An app-start marker in the event log. log.jsonl had twelve event kinds and
   // none of them meant "the app restarted", so a relaunch, and more importantly a
   // switch between a packaged build and a local one, was invisible to every agent
