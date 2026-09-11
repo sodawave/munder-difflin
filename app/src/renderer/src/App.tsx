@@ -60,6 +60,12 @@ export function App() {
   const setIdeOpen = useStore(s => s.setIdeOpen);
 
   const [config, setConfig] = useState<HarnessConfig | null>(null);
+  // Secondary floor windows (?mdFloor=1) share process config / harnessHome but
+  // get an empty session partition — they must not show the launch hive picker.
+  const isFloorWindow = (() => {
+    try { return new URLSearchParams(window.location.search).get('mdFloor') === '1'; }
+    catch { return false; }
+  })();
   // Whether the user has passed the launch-time hive picker this session. Starts
   // true (skip the picker) right after a hive SWITCH — changeHome relaunches and
   // leaves a one-shot localStorage flag so we don't bounce back onto the picker for
@@ -73,6 +79,12 @@ export function App() {
     } catch { /* localStorage unavailable — show the picker */ }
     return false;
   });
+
+  // New Floor: enter the already-configured harness immediately.
+  useEffect(() => {
+    if (!isFloorWindow || !config?.onboardingComplete || !config.harnessHome) return;
+    setHiveOpened(true);
+  }, [isFloorWindow, config?.onboardingComplete, config?.harnessHome]);
   const [settingsOpen, setSettingsOpen] = useState(false);
   /** Which tab Settings opens on. Set by a `cth:open-settings` deep link, reset
    *  to undefined (→ General) whenever the modal is opened the normal way. */

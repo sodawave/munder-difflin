@@ -2438,8 +2438,15 @@ function createWindow(opts: { floor?: boolean } = {}): BrowserWindow {
     if (details.isMainFrame) rendererReadyForHires = false;
   });
 
+  // Floor windows append ?mdFloor=1 so the renderer skips the launch-time hive
+  // picker and opens the current harnessHome. (Floors use an isolated session
+  // partition — empty localStorage — so without this they'd always land on
+  // "SELECT A HARNESS CONFIG" instead of a usable office.)
   if (isDev && process.env.ELECTRON_RENDERER_URL) {
-    win.loadURL(process.env.ELECTRON_RENDERER_URL);
+    const base = process.env.ELECTRON_RENDERER_URL;
+    win.loadURL(isFloor ? `${base}${base.includes('?') ? '&' : '?'}mdFloor=1` : base);
+  } else if (isFloor) {
+    win.loadFile(join(__dirname, '../renderer/index.html'), { query: { mdFloor: '1' } });
   } else {
     win.loadFile(join(__dirname, '../renderer/index.html'));
   }
