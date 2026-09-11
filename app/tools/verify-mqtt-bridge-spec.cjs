@@ -28,6 +28,7 @@ run(
     '--test',
     'test/device-seal.test.cjs',
     'test/network-topics.test.cjs',
+    'test/network-peers-store.test.cjs',
     'test/network-bridge.spec.test.cjs',
   ],
   appRoot

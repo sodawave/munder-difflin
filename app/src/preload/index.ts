@@ -823,21 +823,94 @@ const api = {
       ipcRenderer.invoke('entitlements:canUse', feature),
   },
 
-  // ─── Additive Teams Private Network bridge (MQTT sealed; CAP-1..3) ────────
+  // ─── Additive Private Network / peer harness coop (MQTT sealed) ───────────
   network: {
     getPublicBundle: (): Promise<{
       deviceId: string;
       x25519PublicKey: string;
       ed25519PublicKey: string;
     } | null> => ipcRenderer.invoke('network:getPublicBundle'),
+    getAddressCard: (): Promise<{
+      v: 1;
+      mqttUrl: string;
+      deviceId: string;
+      x25519PublicKey: string;
+      ed25519PublicKey: string;
+      envLabel: string;
+    } | null> => ipcRenderer.invoke('network:getAddressCard'),
+    getSyncState: (): Promise<{
+      canNetwork: boolean;
+      connected: boolean;
+      addressCard: {
+        v: 1;
+        mqttUrl: string;
+        deviceId: string;
+        x25519PublicKey: string;
+        ed25519PublicKey: string;
+        envLabel: string;
+      } | null;
+      envLabel: string;
+      publishAgentIds: string[];
+      localAgents: Array<{ id: string; name: string; role: string; isGod: boolean }>;
+      peers: Array<{
+        deviceId: string;
+        mqttUrl: string;
+        x25519PublicKey: string;
+        ed25519PublicKey: string;
+        envLabel: string;
+        followAgentIds: string[];
+      }>;
+      followed: Array<{
+        agentId: string;
+        name: string;
+        role: string;
+        caps: string[];
+        isGod: boolean;
+        deviceId: string;
+        peerLabel: string;
+        tintHue: number;
+        x25519PublicKey: string;
+      }>;
+      peerRosters: Record<string, {
+        v: 1;
+        deviceId: string;
+        envLabel: string;
+        agents: Array<{
+          agentId: string;
+          name: string;
+          role: string;
+          caps: string[];
+          isGod: boolean;
+          deviceId: string;
+          peerLabel: string;
+        }>;
+      }>;
+    }> => ipcRenderer.invoke('network:getSyncState'),
+    importPeer: (raw: unknown): Promise<{ ok: boolean; error?: string }> =>
+      ipcRenderer.invoke('network:importPeer', raw),
+    removePeer: (deviceId: string): Promise<{ ok: boolean; error?: string }> =>
+      ipcRenderer.invoke('network:removePeer', deviceId),
+    setPublishAgentIds: (ids: string[]): Promise<{ ok: boolean; error?: string }> =>
+      ipcRenderer.invoke('network:setPublishAgentIds', ids),
+    setFollowAgentIds: (peerDeviceId: string, ids: string[]): Promise<{ ok: boolean; error?: string }> =>
+      ipcRenderer.invoke('network:setFollowAgentIds', peerDeviceId, ids),
+    setEnvLabel: (label: string): Promise<{ ok: boolean; error?: string }> =>
+      ipcRenderer.invoke('network:setEnvLabel', label),
     sendRemote: (arg: {
       peerDeviceId: string;
       peerX25519PublicKey: string;
       orgId?: string;
+      agentId?: string;
       message: Record<string, unknown>;
     }): Promise<{ ok: boolean; error?: string; sealedBytes?: number }> =>
       ipcRenderer.invoke('network:sendRemote', arg),
-    sync: (): Promise<{ ok: boolean; error?: string }> => ipcRenderer.invoke('network:sync'),
+    sync: (): Promise<{ ok: boolean; error?: string; state?: unknown }> =>
+      ipcRenderer.invoke('network:sync'),
+    onSyncState: (cb: (state: unknown) => void): (() => void) => {
+      const handler = (_: Electron.IpcRendererEvent, state: unknown) => cb(state);
+      ipcRenderer.on('network:syncState', handler);
+      return () => ipcRenderer.removeListener('network:syncState', handler);
+    },
   },
 
   // ─── Stapler (Pro floating capture puck) ─────────────────────────────────

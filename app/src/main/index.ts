@@ -248,10 +248,15 @@ const hive = new HiveManager(
     try { wc.send(channel, payload); return true; } catch { return false; }
   }
 );
-/** Additive Teams Private Network bridge (SPEC mqtt-additive-bridge). Idle unless canNetwork. */
+/** Additive Teams Private Network bridge (SPEC mqtt-additive-bridge + peer-harness-coop). Idle unless canNetwork. */
 const networkBridge = new NetworkBridge({
   identityDir: () => readConfig().harnessHome,
   hive: () => hive,
+  emit: (channel, payload) => {
+    const wc = liveWebContents();
+    if (!wc) return;
+    try { wc.send(channel, payload); } catch { /* window tore down */ }
+  },
 });
 // #7C — operator control state (pause/gate/steer/halt), read by the HookServer
 // when deciding hook returns.
@@ -3571,14 +3576,34 @@ ipcMain.handle('entitlements:canUse', (_evt, feature: unknown) => {
   return entitlementsCanUse(f);
 });
 
-// ─── IPC: additive network bridge (Teams + canNetwork only) ─────────────────
+// ─── IPC: additive network bridge (Teams + canNetwork / peer coop) ───────────
 ipcMain.handle('network:getPublicBundle', () => networkBridge.getPublicBundle());
+ipcMain.handle('network:getAddressCard', () => networkBridge.getAddressCard());
+ipcMain.handle('network:getSyncState', () => networkBridge.getSyncState());
+ipcMain.handle('network:importPeer', (_evt, raw: unknown) => networkBridge.importPeer(raw));
+ipcMain.handle('network:removePeer', (_evt, deviceId: unknown) => {
+  if (typeof deviceId !== 'string') return { ok: false, error: 'deviceId required' };
+  return networkBridge.removePeer(deviceId);
+});
+ipcMain.handle('network:setPublishAgentIds', (_evt, ids: unknown) => {
+  if (!Array.isArray(ids)) return { ok: false, error: 'ids array required' };
+  return networkBridge.setPublishAgentIds(ids.map(String));
+});
+ipcMain.handle('network:setFollowAgentIds', (_evt, peerDeviceId: unknown, ids: unknown) => {
+  if (typeof peerDeviceId !== 'string') return { ok: false, error: 'peerDeviceId required' };
+  if (!Array.isArray(ids)) return { ok: false, error: 'ids array required' };
+  return networkBridge.setFollowAgentIds(peerDeviceId, ids.map(String));
+});
+ipcMain.handle('network:setEnvLabel', (_evt, label: unknown) => {
+  return networkBridge.setEnvLabel(typeof label === 'string' ? label : '');
+});
 ipcMain.handle('network:sendRemote', (_evt, arg: unknown) => {
   if (!arg || typeof arg !== 'object') return { ok: false, error: 'invalid args' };
   const a = arg as {
     peerDeviceId?: unknown;
     peerX25519PublicKey?: unknown;
     orgId?: unknown;
+    agentId?: unknown;
     message?: unknown;
   };
   if (typeof a.peerDeviceId !== 'string' || typeof a.peerX25519PublicKey !== 'string') {
@@ -3589,11 +3614,12 @@ ipcMain.handle('network:sendRemote', (_evt, arg: unknown) => {
     peerDeviceId: a.peerDeviceId,
     peerX25519PublicKey: a.peerX25519PublicKey,
     orgId: typeof a.orgId === 'string' ? a.orgId : undefined,
+    agentId: typeof a.agentId === 'string' ? a.agentId : undefined,
     message: a.message as Partial<HiveMessage>,
   });
 });
 ipcMain.handle('network:sync', () => {
-  try { networkBridge.sync(); return { ok: true }; }
+  try { networkBridge.sync(); return { ok: true, state: networkBridge.getSyncState() }; }
   catch (e) { return { ok: false, error: e instanceof Error ? e.message : String(e) }; }
 });
 

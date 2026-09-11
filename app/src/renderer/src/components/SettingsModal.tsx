@@ -21,6 +21,7 @@ import { OfficeThemePicker } from './OfficeThemePicker';
 import { McpDefaultsSettings } from './McpDefaultsSettings';
 import { IntegrationsRegistry } from './IntegrationsRegistry';
 import { AiEnginesSettings } from './AiEnginesSettings';
+import { SyncHarnessPanel } from './SyncHarnessPanel';
 import { REALTIME_MODEL } from '@shared/realtimePricing';
 import { RealtimeDevicePicker } from '@/realtime/DevicePicker';
 import { CostHud } from '@/realtime/CostHud';
@@ -179,8 +180,8 @@ const sectionHeadFlush = { ...sectionHead, marginBottom: 0 } as const;
 /** The 2px rule between Settings sections. */
 const sectionRule = { height: 2, background: 'var(--cth-ink-300)' } as const;
 
-export type Section = 'General' | 'Prerequisites' | 'Agents & Models' | 'Autonomy & Budgets' | 'Connections' | 'Voice' | 'Memory & Knowledge';
-const NAV_SECTIONS: Section[] = ['General', 'Prerequisites', 'Agents & Models', 'Autonomy & Budgets', 'Connections', 'Voice', 'Memory & Knowledge'];
+export type Section = 'General' | 'Prerequisites' | 'Agents & Models' | 'Autonomy & Budgets' | 'Connections' | 'Harness Sync' | 'Voice' | 'Memory & Knowledge';
+const NAV_SECTIONS: Section[] = ['General', 'Prerequisites', 'Agents & Models', 'Autonomy & Budgets', 'Connections', 'Harness Sync', 'Voice', 'Memory & Knowledge'];
 /** i18n key for each nav section's label — the Section values themselves stay
  *  as stable identifiers (tab state, deep links). */
 const NAV_SECTION_KEYS: Record<Section, string> = {
@@ -189,6 +190,7 @@ const NAV_SECTION_KEYS: Record<Section, string> = {
   'Agents & Models': 'settings.nav.agentsModels',
   'Autonomy & Budgets': 'settings.nav.autonomyBudgets',
   'Connections': 'settings.nav.connections',
+  'Harness Sync': 'settings.nav.harnessSync',
   'Voice': 'settings.nav.voice',
   'Memory & Knowledge': 'settings.nav.memoryKnowledge'
 };
@@ -1429,6 +1431,13 @@ export function SettingsModal({ config, onClose, initialSection }: SettingsModal
                     <>
                       <McpDefaultsSettings config={config} />
                       <div style={{ height: 1, background: 'var(--cth-ink-300)' }} />
+                    </>
+                  )}
+
+                  {activeSection === 'Harness Sync' && (
+                    <>
+                      <div style={sectionHeadTight}>Harness Sync</div>
+                      <SyncHarnessPanel />
                     </>
                   )}
 

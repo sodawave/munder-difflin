@@ -99,6 +99,13 @@ export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent
   }, [showHistory, tab]);
   const visibleTabs = TABS.filter((t) => t.key !== 'trigger-history' || showHistory);
 
+  // Keep the active tab visible in the single-row strip (Triggers / Activity sit
+  // toward the end and used to land on a wrapped row that looked "dismantled").
+  useEffect(() => {
+    const el = document.querySelector<HTMLElement>(`.cth-tabbar [data-cc-tab="${tab}"]`);
+    el?.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'smooth' });
+  }, [tab, showHistory]);
+
   // External tab requests (the office task board → 'tasks', the boss-room
   // calendar → 'triggers'). seq-keyed so clicking again re-opens the tab even
   // if it was already requested.
@@ -226,50 +233,27 @@ export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent
         </div>
       </div>
 
-      {/* Tab bar — ONE row, tabs at their natural width, scrolling only if the
-          panel is genuinely too narrow for all of them.
-
-          This was an auto-fit grid of equal-width cells, which had a failure mode
-          the equal widths caused: every column is sized to the WIDEST tab, so the
-          track count is set by the longest label rather than by the total width
-          the labels actually need. Adding a 12th tab tipped it over at fullscreen
-          width and dropped `setup` onto a second row with most of the first row's
-          space still unused — the tabs need ~1320px of content and had ~1610px.
-
-          Content-sized tabs fit all twelve on one line with room to spare, and the
-          `.cth-tabbar` rules in global.css (scrollbar-width: none, ::-webkit-
-          scrollbar { height: 0 }) already exist for exactly this: a single row that
-          scrolls with the scrollbar hidden. The grid never scrolled, so those rules
-          have been dead code since it landed.
-
-          Trade-off, deliberate: in the NARROW docked panel the far-right tabs now
-          scroll out of view instead of wrapping to a visible second row. One row
-          that sometimes needs a scroll beats two rows where one is nearly empty —
-          and the grid's own reason for existing (keeping wrapped rows aligned)
-          stops applying the moment there is only ever one row. */}
+      {/* Tab bar — ONE row always. Content-sized tabs; horizontal scroll (scrollbar
+          hidden via `.cth-tabbar` in global.css) when the docked sidebar is narrow.
+          Wrapping used to dump Triggers / Activity onto a second/third row and make
+          the strip look dismantled while Terminal / Monitor / Tasks stayed on row 1. */}
       <div className="cth-tabbar" style={{
         display: 'flex', gap: 4,
-        // Docked in the sidebar the panel is narrow, so tabs WRAP: a second row
-        // costs a few pixels of a tall column, while a horizontal scroll there
-        // would hide half the tabs behind a gesture with no affordance.
-        // In focus mode the panel is wide and vertical space is the scarce
-        // resource, so it stays ONE row and scrolls instead. `.cth-tabbar` in
-        // global.css already hides that scrollbar.
-        flexWrap: fullscreen ? 'nowrap' : 'wrap',
-        overflowX: fullscreen ? 'auto' : 'visible',
+        flexWrap: 'nowrap',
+        overflowX: 'auto',
         padding: '6px 8px', background: 'var(--cth-cream-100)',
         borderBottom: '1px solid var(--cth-ink-700)', flexShrink: 0
       }}>
         {visibleTabs.map((tabDef) => (
           <button
             key={tabDef.key}
+            type="button"
+            data-cc-tab={tabDef.key}
             onClick={() => setTab(tabDef.key)}
             style={{
               whiteSpace: 'nowrap',
-              // grow to share any spare width (so the strip still spans the panel
-              // exactly as the old grid did), never shrink below the label (a
-              // squashed tab is unreadable — overflow into the scroll instead).
-              flex: '1 0 auto',
+              // Natural width; never shrink below the label — overflow scrolls.
+              flex: '0 0 auto',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
               padding: '4px 8px 3px', border: 'none', cursor: 'pointer',
               background: tab === tabDef.key ? `var(--cth-${agent.accent})` : 'var(--cth-cream-200)',
@@ -290,7 +274,7 @@ export function CommandCenterPanel({ agent, fullscreen = false }: { agent: Agent
       </div>
 
       {/* Body */}
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ flex: 1, minHeight: 0, minWidth: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
         {tab === 'terminal' && (
           isFullscreenedHere ? (
             <Centered>{t('commandCenter.terminalFullscreen')}</Centered>
