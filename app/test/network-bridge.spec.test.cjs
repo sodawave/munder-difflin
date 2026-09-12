@@ -17,7 +17,7 @@ const loadTs = require('./load-ts.cjs');
 const { NetworkBridge } = loadTs('src/main/network/index.ts');
 const { HiveManager } = loadTs('src/main/hive.ts');
 const sealCore = require(path.join(__dirname, '../src/main/network/deviceSealCore.cjs'));
-const { peerInboxTopic } = require(path.join(__dirname, '../src/main/network/topics.cjs'));
+const { peerInboxTopic, agentInboxTopic, rosterTopic } = require(path.join(__dirname, '../src/main/network/topics.cjs'));
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -127,7 +127,7 @@ describe('SPEC mqtt-additive-bridge', () => {
     t.after(() => eaves.end(true));
     await new Promise((resolve, reject) => {
       eaves.on('connect', () => {
-        eaves.subscribe(peerInboxTopic(orgId, bobBundle.deviceId), { qos: 1 }, (err) =>
+        eaves.subscribe(agentInboxTopic(orgId, bobBundle.deviceId, 'god'), { qos: 1 }, (err) =>
           err ? reject(err) : resolve()
         );
       });
@@ -249,5 +249,78 @@ describe('SPEC mqtt-additive-bridge', () => {
     allowed = false;
     bridge.sync();
     assert.equal(bridge.connected, false);
+  });
+
+  it('coop: agent inbox topic + roster share/follow', async (t) => {
+    const aliceFloor = await makeFloor(t, 'coop-a');
+    const bobFloor = await makeFloor(t, 'coop-b');
+    await bobFloor.hive.ensureAgent({
+      id: 'ops-1',
+      name: 'Ops',
+      provider: 'claude',
+      cwd: bobFloor.home,
+      role: 'ops',
+    });
+    const orgId = 'org_coop';
+
+    const alice = new NetworkBridge({
+      identityDir: () => aliceFloor.home,
+      hive: () => aliceFloor.hive,
+      canNetwork: () => true,
+      orgId: () => orgId,
+      brokerUrl: () => brokerEnv.url,
+    });
+    const bob = new NetworkBridge({
+      identityDir: () => bobFloor.home,
+      hive: () => bobFloor.hive,
+      canNetwork: () => true,
+      orgId: () => orgId,
+      brokerUrl: () => brokerEnv.url,
+    });
+
+    await alice.whenConnected();
+    await bob.whenConnected();
+
+    bob.setEnvLabel('prod-vps');
+    bob.setPublishAgentIds(['god-1', 'ops-1']);
+
+    const bobCard = bob.getAddressCard();
+    assert.ok(bobCard);
+    const imported = alice.importPeer(bobCard);
+    assert.equal(imported.ok, true, imported.error);
+
+    await waitFor(() => alice.getSyncState().peerRosters[bobCard.deviceId]);
+    const roster = alice.getSyncState().peerRosters[bobCard.deviceId];
+    assert.ok(roster.agents.some((a) => a.agentId === 'ops-1'));
+    assert.ok(roster.agents.some((a) => a.isGod));
+
+    alice.setFollowAgentIds(bobCard.deviceId, ['ops-1']);
+    const followed = alice.getSyncState().followed;
+    assert.ok(followed.some((f) => f.agentId === 'ops-1'));
+
+    const msgId = '2026-09-12T00-00-00-000Z-coop';
+    const sent = alice.sendRemote({
+      peerDeviceId: bobCard.deviceId,
+      peerX25519PublicKey: bobCard.x25519PublicKey,
+      agentId: 'ops-1',
+      message: {
+        id: msgId,
+        from: 'alice-god',
+        to: 'ops-1',
+        act: 'request',
+        subject: 'deploy-please',
+        body: 'ship it on the VPS',
+      },
+    });
+    assert.equal(sent.ok, true, sent.error);
+
+    const inboxPath = path.join(bobFloor.home, 'hive', 'agents', 'ops-1', 'inbox', `${msgId}.json`);
+    await waitFor(() => fs.existsSync(inboxPath));
+    const landed = JSON.parse(fs.readFileSync(inboxPath, 'utf8'));
+    assert.equal(landed.to, 'ops-1');
+    assert.equal(landed.subject, 'deploy-please');
+
+    alice.stop();
+    bob.stop();
   });
 });

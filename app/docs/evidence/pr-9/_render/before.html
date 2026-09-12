@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "IBM Plex Sans", "Segoe UI", sans-serif; background: #1a1814; color: #f3efe6; }
+    .frame { width: 960px; height: 540px; padding: 28px 32px; background: linear-gradient(160deg, #242018 0%, #1a1814 55%, #12100e 100%); position: relative; overflow: hidden; }
+    .eyebrow { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #9a917f; margin-bottom: 8px; }
+    h1 { margin: 0 0 6px; font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }
+    .sub { color: #b7ae9c; font-size: 14px; margin-bottom: 22px; max-width: 52ch; line-height: 1.4; }
+    .layout { display: flex; gap: 20px; height: 360px; }
+    .nav { width: 180px; border-right: 1px solid #3a342c; padding-right: 12px; display: flex; flex-direction: column; gap: 6px; }
+    .nav span { font-size: 13px; padding: 8px 10px; border-radius: 4px; color: #cfc6b4; }
+    .nav .muted { opacity: 0.45; }
+    .panel { flex: 1; background: #221e18; border: 1px solid #3f382e; border-radius: 8px; padding: 16px 18px; }
+    .empty { color: #8f8674; font-size: 14px; line-height: 1.5; margin-top: 24px; }
+    .badge { position: absolute; top: 24px; right: 28px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #c4a35a; border: 1px solid #c4a35a; padding: 4px 10px; border-radius: 999px; }
+    code { color: #e8dfcf; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="badge">Before</div>
+    <div class="eyebrow">Settings</div>
+    <h1>No harness pairing UI</h1>
+    <div class="sub">MQTT bridge existed for sealed mail, but there was no Sync screen to exchange boss address cards, pick agents to share/follow, or see tinted remotes.</div>
+    <div class="layout">
+      <div class="nav">
+        <span>General</span>
+        <span>Connections</span>
+        <span class="muted">— no Harness Sync</span>
+        <span>Voice</span>
+      </div>
+      <div class="panel">
+        <div class="empty">
+          Remote harnesses were not representable in Settings.<br/><br/>
+          Operators could only call <code>network:sendRemote</code> by hand — no roster, no share/follow checklists, no boss MQTT card.
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "IBM Plex Sans", "Segoe UI", sans-serif; background: #1a1814; color: #f3efe6; }
+    .frame { width: 960px; height: 540px; padding: 28px 32px; background: linear-gradient(160deg, #242018 0%, #1a1814 55%, #12100e 100%); position: relative; overflow: hidden; }
+    .eyebrow { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #9a917f; margin-bottom: 8px; }
+    h1 { margin: 0 0 6px; font-size: 28px; font-weight: 600; letter-spacing: -0.02em; }
+    .sub { color: #b7ae9c; font-size: 14px; margin-bottom: 22px; max-width: 56ch; line-height: 1.4; }
+    .layout { display: flex; gap: 20px; height: 360px; }
+    .nav { width: 180px; border-right: 1px solid #3a342c; padding-right: 12px; display: flex; flex-direction: column; gap: 6px; }
+    .nav span { font-size: 13px; padding: 8px 10px; border-radius: 4px; color: #cfc6b4; }
+    .nav .active { background: #3a342c; color: #fff8ea; font-weight: 600; }
+    .panel { flex: 1; background: #221e18; border: 1px solid #3f382e; border-radius: 8px; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px; }
+    .label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #8f8674; }
+    .card { font-family: ui-monospace, monospace; font-size: 11px; line-height: 1.45; background: #16130f; border: 1px solid #4a4338; border-radius: 4px; padding: 10px 12px; color: #e8dfcf; white-space: pre; }
+    .row { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+    .check { width: 14px; height: 14px; border: 1.5px solid #8f8674; border-radius: 3px; display: inline-flex; align-items: center; justify-content: center; }
+    .check.on { background: #c4a35a; border-color: #c4a35a; color: #1a1814; font-size: 10px; font-weight: 700; }
+    .tint { width: 4px; height: 28px; border-radius: 2px; background: hsl(168 55% 42%); margin-right: 8px; }
+    .pill { align-self: flex-start; font-size: 11px; padding: 3px 8px; border-radius: 4px; background: #2f4a34; color: #d8f3dc; }
+    .badge { position: absolute; top: 24px; right: 28px; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #c4a35a; border: 1px solid #c4a35a; padding: 4px 10px; border-radius: 999px; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="badge">After</div>
+    <div class="eyebrow">Settings → Harness Sync</div>
+    <h1>Pair harnesses · share / follow · mail</h1>
+    <div class="sub">Boss MQTT address card, peer paste, agent checklists, tinted followed remotes. Orders land in the remote agent’s local inbox.</div>
+    <div class="layout">
+      <div class="nav">
+        <span>Connections</span>
+        <span class="active">Harness Sync</span>
+        <span>Voice</span>
+      </div>
+      <div class="panel">
+        <div class="pill">MQTT connected</div>
+        <div>
+          <div class="label">Boss MQTT address</div>
+          <div class="card">{"v":1,"mqttUrl":"mqtt://192.168.1.10:1883",
+ "deviceId":"1941c9…","envLabel":"dev-laptop"}</div>
+        </div>
+        <div>
+          <div class="label">Share my agents</div>
+          <div class="row"><span class="check on">✓</span> Michael (god)</div>
+          <div class="row"><span class="check"></span> Research</div>
+        </div>
+        <div style="display:flex;align-items:center;">
+          <div class="tint"></div>
+          <div>
+            <div class="label">Followed · prod-vps</div>
+            <div class="row">Ops · ops-1 &nbsp; <strong style="color:#c4a35a">Send mail</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

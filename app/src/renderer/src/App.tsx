@@ -492,8 +492,8 @@ export function App() {
         />
 
         <div style={{
-          width: sidebarWidth, flexShrink: 0,
-          minHeight: 0, display: 'flex', flexDirection: 'column'
+          width: sidebarWidth, flexShrink: 0, minWidth: 0,
+          minHeight: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden'
         }}>
           {agent ? (
             <AgentDetailPanel agent={agent} />

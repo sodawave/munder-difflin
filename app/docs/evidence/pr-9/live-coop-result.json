@@ -1,0 +1,11 @@
+{
+  "ok": true,
+  "broker": "mqtt://127.0.0.1:1883",
+  "bobDeviceId": "a52313eb639b865f",
+  "followed": [
+    "ops-1"
+  ],
+  "inboxPath": "/var/folders/zf/gc17m3tn0zs04dj9wmbs4t7h0000gn/T/md-coop-bob-B1XCEY/hive/agents/ops-1/inbox/coop-live-1789203145345.json",
+  "subject": "COOP-LIVE-DEPLOY",
+  "at": "2026-09-12T08:52:25.428Z"
+}

@@ -35,6 +35,7 @@ function copyMainSidecars() {
     // so the .cjs sidecars must sit next to that bundle (like kg-core.cjs).
     ['src/main/network/deviceSealCore.cjs', 'out/main/deviceSealCore.cjs'],
     ['src/main/network/topics.cjs', 'out/main/topics.cjs'],
+    ['src/main/network/peersStore.cjs', 'out/main/peersStore.cjs'],
   ];
   return {
     name: 'copy-main-cjs-sidecars',

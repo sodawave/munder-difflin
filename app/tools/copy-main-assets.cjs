@@ -13,6 +13,7 @@ const MAIN_ASSETS = [
   // (same pattern as kg-core.cjs), not under out/main/network/.
   ['src/main/network/deviceSealCore.cjs', 'out/main/deviceSealCore.cjs'],
   ['src/main/network/topics.cjs', 'out/main/topics.cjs'],
+  ['src/main/network/peersStore.cjs', 'out/main/peersStore.cjs'],
 ];
 
 for (const [fromRel, toRel] of MAIN_ASSETS) {

@@ -39,6 +39,7 @@ export function ProShell(props: {
   const agents = useStore((s) => s.agents);
   const agent = useStore(selectedAgent);
   const select = useStore((s) => s.select);
+  const requestCommandCenterTab = useStore((s) => s.requestCommandCenterTab);
   const god = agents.find((a) => a.isGod) ?? null;
 
   useEffect(() => {
@@ -46,6 +47,12 @@ export function ProShell(props: {
       select(god.id);
     }
   }, [surface, god, agent?.id, select]);
+
+  useEffect(() => {
+    if (surface !== 'automations' || !god) return;
+    if (agent?.id !== god.id) select(god.id);
+    requestCommandCenterTab('triggers');
+  }, [surface, god, agent?.id, select, requestCommandCenterTab]);
 
   if (!canPro) {
     return (
@@ -188,7 +195,11 @@ export function ProShell(props: {
           )}
           {surface === 'tasks' && <div style={{ padding: 12 }}><TasksKanban /></div>}
           {surface === 'inbox' && <div style={{ padding: 12 }}><AskMeTab /></div>}
-          {surface === 'automations' && <div style={{ padding: 12 }}><TriggersTab /></div>}
+          {surface === 'automations' && (
+            god
+              ? <CommandCenterPanel agent={god} />
+              : <div style={{ padding: 12 }}><TriggersTab /></div>
+          )}
           {surface === 'memory' && god && (
             <div style={{ padding: 12, height: '100%' }}>
               <MemoryGraphPanel
