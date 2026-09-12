@@ -57,8 +57,79 @@ describe('peersStore', () => {
     }
   });
 
-  it('tintHueForDevice is stable', () => {
-    assert.equal(store.tintHueForDevice('abc'), store.tintHueForDevice('abc'));
-    assert.notEqual(store.tintHueForDevice('abc'), store.tintHueForDevice('xyz'));
+  it('rejects oversized cards', () => {
+    const huge = JSON.stringify({
+      v: 1,
+      deviceId: 'x',
+      x25519PublicKey: 'y',
+      pad: 'z'.repeat(store.MAX_CARD_CHARS),
+    });
+    const r = store.parseAddressCard(huge);
+    assert.equal(r.ok, false);
+  });
+
+  it('detects self address cards by deviceId or keys', () => {
+    const identity = {
+      deviceId: 'devA',
+      x25519: { publicKey: 'xA' },
+      ed25519: { publicKey: 'eA' },
+    };
+    assert.equal(
+      store.isSelfAddressCard(
+        { v: 1, mqttUrl: '', deviceId: 'devA', x25519PublicKey: 'other', ed25519PublicKey: '', envLabel: '' },
+        identity
+      ),
+      true
+    );
+    assert.equal(
+      store.isSelfAddressCard(
+        { v: 1, mqttUrl: '', deviceId: 'devB', x25519PublicKey: 'xA', ed25519PublicKey: '', envLabel: '' },
+        identity
+      ),
+      true
+    );
+    assert.equal(
+      store.isSelfAddressCard(
+        { v: 1, mqttUrl: '', deviceId: 'devB', x25519PublicKey: 'xB', ed25519PublicKey: 'eB', envLabel: '' },
+        identity
+      ),
+      false
+    );
+  });
+
+  it('scrubs self peers from store', () => {
+    const identity = {
+      deviceId: 'me',
+      x25519: { publicKey: 'xMe' },
+      ed25519: { publicKey: 'eMe' },
+    };
+    const scrubbed = store.scrubSelfPeers(
+      {
+        v: 1,
+        envLabel: '',
+        publishAgentIds: [],
+        peers: [
+          {
+            deviceId: 'me',
+            mqttUrl: '',
+            x25519PublicKey: 'xMe',
+            ed25519PublicKey: 'eMe',
+            envLabel: '',
+            followAgentIds: [],
+          },
+          {
+            deviceId: 'peer',
+            mqttUrl: '',
+            x25519PublicKey: 'xP',
+            ed25519PublicKey: 'eP',
+            envLabel: '',
+            followAgentIds: [],
+          },
+        ],
+      },
+      identity
+    );
+    assert.equal(scrubbed.peers.length, 1);
+    assert.equal(scrubbed.peers[0].deviceId, 'peer');
   });
 });

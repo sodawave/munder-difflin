@@ -8,6 +8,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const PEERS_FILE = 'peers.json';
+/** Hard limits — prevent runaway paste / peer lists from freezing the UI. */
+const MAX_CARD_CHARS = 8 * 1024;
+const MAX_PEERS = 8;
+const MAX_AGENT_IDS = 64;
+const MAX_ID_LEN = 64;
+const MAX_LABEL_LEN = 64;
+const MAX_KEY_LEN = 128;
 
 function peersPath(harnessHome) {
   return path.join(harnessHome, 'network', PEERS_FILE);
@@ -23,14 +30,18 @@ function normalizeStore(raw) {
   const peers = Array.isArray(raw.peers)
     ? raw.peers
         .filter((p) => p && typeof p.deviceId === 'string' && typeof p.x25519PublicKey === 'string')
+        .slice(0, MAX_PEERS)
         .map((p) => ({
-          deviceId: String(p.deviceId),
-          mqttUrl: typeof p.mqttUrl === 'string' ? p.mqttUrl : '',
-          x25519PublicKey: String(p.x25519PublicKey),
-          ed25519PublicKey: typeof p.ed25519PublicKey === 'string' ? p.ed25519PublicKey : '',
-          envLabel: typeof p.envLabel === 'string' ? p.envLabel : '',
+          deviceId: String(p.deviceId).slice(0, MAX_ID_LEN),
+          mqttUrl: typeof p.mqttUrl === 'string' ? p.mqttUrl.slice(0, 512) : '',
+          x25519PublicKey: String(p.x25519PublicKey).slice(0, MAX_KEY_LEN),
+          ed25519PublicKey: typeof p.ed25519PublicKey === 'string' ? p.ed25519PublicKey.slice(0, MAX_KEY_LEN) : '',
+          envLabel: typeof p.envLabel === 'string' ? p.envLabel.slice(0, MAX_LABEL_LEN) : '',
           followAgentIds: Array.isArray(p.followAgentIds)
-            ? p.followAgentIds.filter((id) => typeof id === 'string')
+            ? p.followAgentIds
+                .filter((id) => typeof id === 'string')
+                .map((id) => String(id).slice(0, MAX_ID_LEN))
+                .slice(0, MAX_AGENT_IDS)
             : [],
         }))
     : [];
@@ -38,9 +49,12 @@ function normalizeStore(raw) {
     v: 1,
     peers,
     publishAgentIds: Array.isArray(raw.publishAgentIds)
-      ? raw.publishAgentIds.filter((id) => typeof id === 'string')
+      ? raw.publishAgentIds
+          .filter((id) => typeof id === 'string')
+          .map((id) => String(id).slice(0, MAX_ID_LEN))
+          .slice(0, MAX_AGENT_IDS)
       : [],
-    envLabel: typeof raw.envLabel === 'string' ? raw.envLabel : '',
+    envLabel: typeof raw.envLabel === 'string' ? raw.envLabel.slice(0, MAX_LABEL_LEN) : '',
   };
 }
 
@@ -71,6 +85,9 @@ function savePeersStore(harnessHome, store) {
 function parseAddressCard(raw) {
   let obj = raw;
   if (typeof raw === 'string') {
+    if (raw.length > MAX_CARD_CHARS) {
+      return { ok: false, error: `card too large (max ${MAX_CARD_CHARS} chars)` };
+    }
     try {
       obj = JSON.parse(raw);
     } catch {
@@ -85,17 +102,48 @@ function parseAddressCard(raw) {
   if (typeof obj.x25519PublicKey !== 'string' || !obj.x25519PublicKey.trim()) {
     return { ok: false, error: 'x25519PublicKey required' };
   }
+  const deviceId = String(obj.deviceId).trim().slice(0, MAX_ID_LEN);
+  const x25519PublicKey = String(obj.x25519PublicKey).trim().slice(0, MAX_KEY_LEN);
+  const ed25519PublicKey =
+    typeof obj.ed25519PublicKey === 'string' ? obj.ed25519PublicKey.trim().slice(0, MAX_KEY_LEN) : '';
+  if (!deviceId || !x25519PublicKey) return { ok: false, error: 'deviceId and x25519PublicKey required' };
   return {
     ok: true,
     card: {
       v: 1,
-      mqttUrl: typeof obj.mqttUrl === 'string' ? obj.mqttUrl : '',
-      deviceId: String(obj.deviceId).trim(),
-      x25519PublicKey: String(obj.x25519PublicKey).trim(),
-      ed25519PublicKey: typeof obj.ed25519PublicKey === 'string' ? obj.ed25519PublicKey.trim() : '',
-      envLabel: typeof obj.envLabel === 'string' ? obj.envLabel.trim() : '',
+      mqttUrl: typeof obj.mqttUrl === 'string' ? obj.mqttUrl.trim().slice(0, 512) : '',
+      deviceId,
+      x25519PublicKey,
+      ed25519PublicKey,
+      envLabel: typeof obj.envLabel === 'string' ? obj.envLabel.trim().slice(0, MAX_LABEL_LEN) : '',
     },
   };
+}
+
+/** True when the card is this install (by device id or either public key). */
+function isSelfAddressCard(card, identity) {
+  if (!card || !identity) return false;
+  if (card.deviceId && card.deviceId === identity.deviceId) return true;
+  if (card.x25519PublicKey && card.x25519PublicKey === identity.x25519?.publicKey) return true;
+  if (card.ed25519PublicKey && identity.ed25519?.publicKey && card.ed25519PublicKey === identity.ed25519.publicKey) {
+    return true;
+  }
+  return false;
+}
+
+/** Drop any peer rows that are this device (corrupt self-import). */
+function scrubSelfPeers(store, identity) {
+  if (!identity || !store || !Array.isArray(store.peers)) return store;
+  const next = {
+    ...store,
+    peers: store.peers.filter(
+      (p) =>
+        p.deviceId !== identity.deviceId &&
+        p.x25519PublicKey !== identity.x25519?.publicKey &&
+        (!p.ed25519PublicKey || p.ed25519PublicKey !== identity.ed25519?.publicKey)
+    ),
+  };
+  return next;
 }
 
 /** Stable tint hue 0–359 from deviceId. */
@@ -114,4 +162,9 @@ module.exports = {
   parseAddressCard,
   tintHueForDevice,
   normalizeStore,
+  isSelfAddressCard,
+  scrubSelfPeers,
+  MAX_CARD_CHARS,
+  MAX_PEERS,
+  MAX_AGENT_IDS,
 };

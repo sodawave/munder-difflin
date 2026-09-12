@@ -56,21 +56,23 @@ export function SyncHarnessPanel() {
   const [body, setBody] = useState('');
   const [busy, setBusy] = useState(false);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (opts?: { connect?: boolean }) => {
     try {
-      await window.cth.network.sync();
+      if (opts?.connect) await window.cth.network.sync();
       const s = await window.cth.network.getSyncState();
       setState(s);
-      setEnvDraft(s.envLabel || '');
+      setEnvDraft((prev) => (prev === (s.envLabel || '') ? prev : (s.envLabel || '')));
     } catch (e) {
       setNote(e instanceof Error ? e.message : String(e));
     }
   }, []);
 
   useEffect(() => {
-    void refresh();
+    void refresh({ connect: true });
     const off = window.cth.network.onSyncState((s) => {
-      setState(s as SyncState);
+      const next = s as SyncState;
+      setState(next);
+      setEnvDraft((prev) => (prev === (next.envLabel || '') ? prev : (next.envLabel || '')));
     });
     return off;
   }, [refresh]);
@@ -88,10 +90,41 @@ export function SyncHarnessPanel() {
   };
 
   const importPeer = async () => {
+    if (busy) return;
+    const paste = peerPaste.trim();
+    if (!paste) {
+      setNote('Paste a peer address card first');
+      return;
+    }
+    if (paste.length > 8 * 1024) {
+      setNote('Card too large — paste a single peer JSON card');
+      return;
+    }
+    // Client-side self-card guard (same card as this boss)
+    const mine = state?.addressCard;
+    if (mine) {
+      try {
+        const obj = JSON.parse(paste) as {
+          deviceId?: string;
+          x25519PublicKey?: string;
+          ed25519PublicKey?: string;
+        };
+        if (
+          (obj.deviceId && obj.deviceId === mine.deviceId) ||
+          (obj.x25519PublicKey && obj.x25519PublicKey === mine.x25519PublicKey) ||
+          (obj.ed25519PublicKey && mine.ed25519PublicKey && obj.ed25519PublicKey === mine.ed25519PublicKey)
+        ) {
+          setNote('That is this harness’s own card — paste another machine’s card');
+          return;
+        }
+      } catch {
+        /* main will report invalid JSON */
+      }
+    }
     setBusy(true);
     setNote('');
     try {
-      const r = await window.cth.network.importPeer(peerPaste.trim());
+      const r = await window.cth.network.importPeer(paste);
       if (!r.ok) setNote(r.error || 'import failed');
       else {
         setPeerPaste('');
@@ -104,23 +137,36 @@ export function SyncHarnessPanel() {
   };
 
   const togglePublish = async (agentId: string) => {
-    if (!state) return;
-    const set = new Set(state.publishAgentIds);
-    if (set.has(agentId)) set.delete(agentId);
-    else set.add(agentId);
-    await window.cth.network.setPublishAgentIds([...set]);
-    await refresh();
+    if (!state || busy) return;
+    setBusy(true);
+    try {
+      const set = new Set(state.publishAgentIds);
+      if (set.has(agentId)) set.delete(agentId);
+      else set.add(agentId);
+      // setPublishAgentIds already publishes roster + emits syncState
+      const r = await window.cth.network.setPublishAgentIds([...set]);
+      if (!r.ok) setNote(r.error || 'update failed');
+      else await refresh();
+    } finally {
+      setBusy(false);
+    }
   };
 
   const toggleFollow = async (peerDeviceId: string, agentId: string) => {
-    if (!state) return;
-    const peer = state.peers.find((p) => p.deviceId === peerDeviceId);
-    if (!peer) return;
-    const set = new Set(peer.followAgentIds);
-    if (set.has(agentId)) set.delete(agentId);
-    else set.add(agentId);
-    await window.cth.network.setFollowAgentIds(peerDeviceId, [...set]);
-    await refresh();
+    if (!state || busy) return;
+    setBusy(true);
+    try {
+      const peer = state.peers.find((p) => p.deviceId === peerDeviceId);
+      if (!peer) return;
+      const set = new Set(peer.followAgentIds);
+      if (set.has(agentId)) set.delete(agentId);
+      else set.add(agentId);
+      const r = await window.cth.network.setFollowAgentIds(peerDeviceId, [...set]);
+      if (!r.ok) setNote(r.error || 'update failed');
+      else await refresh();
+    } finally {
+      setBusy(false);
+    }
   };
 
   const saveEnv = async () => {
@@ -193,7 +239,7 @@ export function SyncHarnessPanel() {
         }}>
           MQTT {state.connected ? 'connected' : 'disconnected'}
         </span>
-        <button type="button" style={btnStyle} onClick={() => void refresh()} disabled={busy}>
+        <button type="button" style={btnStyle} onClick={() => void refresh({ connect: true })} disabled={busy}>
           Refresh
         </button>
       </div>
@@ -278,7 +324,7 @@ export function SyncHarnessPanel() {
                 <button
                   type="button"
                   style={{ ...btnStyle, fontSize: 12 }}
-                  onClick={() => void window.cth.network.removePeer(peer.deviceId).then(refresh)}
+                  onClick={() => void window.cth.network.removePeer(peer.deviceId).then(() => refresh())}
                 >
                   Remove
                 </button>

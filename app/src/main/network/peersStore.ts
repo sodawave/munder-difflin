@@ -9,6 +9,17 @@ const core = require('./peersStore.cjs') as {
   tintHueForDevice: (deviceId: string) => number;
   emptyStore: () => PeersStore;
   peersPath: (harnessHome: string) => string;
+  isSelfAddressCard: (
+    card: AddressCard,
+    identity: { deviceId: string; x25519?: { publicKey: string }; ed25519?: { publicKey: string } }
+  ) => boolean;
+  scrubSelfPeers: (
+    store: PeersStore,
+    identity: { deviceId: string; x25519?: { publicKey: string }; ed25519?: { publicKey: string } }
+  ) => PeersStore;
+  MAX_CARD_CHARS: number;
+  MAX_PEERS: number;
+  MAX_AGENT_IDS: number;
 };
 
 export type PeerRecord = {
@@ -57,3 +68,21 @@ export function tintHueForDevice(deviceId: string): number {
 export function emptyPeersStore(): PeersStore {
   return core.emptyStore();
 }
+
+export function isSelfAddressCard(
+  card: AddressCard,
+  identity: { deviceId: string; x25519?: { publicKey: string }; ed25519?: { publicKey: string } }
+): boolean {
+  return core.isSelfAddressCard(card, identity);
+}
+
+export function scrubSelfPeers(
+  store: PeersStore,
+  identity: { deviceId: string; x25519?: { publicKey: string }; ed25519?: { publicKey: string } }
+): PeersStore {
+  return core.scrubSelfPeers(store, identity);
+}
+
+export const MAX_CARD_CHARS = core.MAX_CARD_CHARS;
+export const MAX_PEERS = core.MAX_PEERS;
+export const MAX_AGENT_IDS = core.MAX_AGENT_IDS;

@@ -19,10 +19,14 @@ import {
   rosterTopic,
 } from './topics';
 import {
+  isSelfAddressCard,
   loadPeersStore,
   parseAddressCard,
   savePeersStore,
+  scrubSelfPeers,
   tintHueForDevice,
+  MAX_AGENT_IDS,
+  MAX_PEERS,
   type AddressCard,
   type PeerRecord,
   type PeersStore,
@@ -170,14 +174,21 @@ export class NetworkBridge {
     const dir = this.deps.identityDir();
     if (!dir) return { ok: false, error: 'harness home required' };
     const me = this.ensureIdentity();
-    if (me && parsed.card.deviceId === me.deviceId) {
-      return { ok: false, error: 'cannot import this device as a peer' };
+    if (!me) return { ok: false, error: 'device identity unavailable' };
+    if (isSelfAddressCard(parsed.card, me)) {
+      return {
+        ok: false,
+        error: 'that is this harness’s own address card — paste a peer’s card instead',
+      };
     }
     const store = this.readStore();
+    if (store.peers.length >= MAX_PEERS && !store.peers.some((p) => p.deviceId === parsed.card.deviceId)) {
+      return { ok: false, error: `peer limit reached (max ${MAX_PEERS})` };
+    }
     const existing = store.peers.find((p) => p.deviceId === parsed.card.deviceId);
     const followAgentIds = existing?.followAgentIds?.length
-      ? existing.followAgentIds
-      : []; // operator marks follow on Sync screen; god default applied when empty after first roster
+      ? existing.followAgentIds.slice(0, MAX_AGENT_IDS)
+      : [];
     const nextPeer: PeerRecord = {
       deviceId: parsed.card.deviceId,
       mqttUrl: parsed.card.mqttUrl,
@@ -189,10 +200,11 @@ export class NetworkBridge {
     store.peers = [
       ...store.peers.filter((p) => p.deviceId !== nextPeer.deviceId),
       nextPeer,
-    ];
+    ].slice(0, MAX_PEERS);
     savePeersStore(dir, store);
     this.sync();
-    if (this.mqtt) {
+    // Never subscribe to our own roster topic
+    if (this.mqtt && nextPeer.deviceId !== me.deviceId) {
       this.mqtt.subscribe(rosterTopic(this.resolveOrgId(), nextPeer.deviceId));
     }
     this.publishRoster();
@@ -215,7 +227,7 @@ export class NetworkBridge {
     const dir = this.deps.identityDir();
     if (!dir) return { ok: false, error: 'harness home required' };
     const store = this.readStore();
-    store.publishAgentIds = [...new Set(ids.filter((x) => typeof x === 'string'))];
+    store.publishAgentIds = [...new Set(ids.filter((x) => typeof x === 'string'))].slice(0, MAX_AGENT_IDS);
     savePeersStore(dir, store);
     this.publishRoster();
     this.emitSync();
@@ -225,10 +237,14 @@ export class NetworkBridge {
   setFollowAgentIds(peerDeviceId: string, ids: string[]): { ok: boolean; error?: string } {
     const dir = this.deps.identityDir();
     if (!dir) return { ok: false, error: 'harness home required' };
+    const me = this.ensureIdentity();
+    if (me && peerDeviceId === me.deviceId) {
+      return { ok: false, error: 'cannot follow this harness as a peer' };
+    }
     const store = this.readStore();
     const peer = store.peers.find((p) => p.deviceId === peerDeviceId);
     if (!peer) return { ok: false, error: 'peer not found' };
-    peer.followAgentIds = [...new Set(ids.filter((x) => typeof x === 'string'))];
+    peer.followAgentIds = [...new Set(ids.filter((x) => typeof x === 'string'))].slice(0, MAX_AGENT_IDS);
     savePeersStore(dir, store);
     this.emitSync();
     return { ok: true };
@@ -251,8 +267,9 @@ export class NetworkBridge {
     if (allowed && !this.running) this.start();
     else if (!allowed && this.running) this.stop();
     else if (allowed && this.running) {
+      // Refresh peer roster subscriptions only — do not republish on every
+      // Settings refresh (that froze the UI when toggling share checkboxes).
       this.subscribePeerRosters();
-      this.publishRoster();
     }
   }
 
@@ -345,7 +362,28 @@ export class NetworkBridge {
   }
 
   private readStore(): PeersStore {
-    return loadPeersStore(this.deps.identityDir());
+    const dir = this.deps.identityDir();
+    let store = loadPeersStore(dir);
+    const me = this.identity || (dir ? this.ensureIdentity() : null);
+    if (me) {
+      const scrubbed = scrubSelfPeers(store, me);
+      if (scrubbed.peers.length !== store.peers.length && dir) {
+        store = savePeersStore(dir, scrubbed);
+      } else {
+        store = scrubbed;
+      }
+    }
+    return store;
+  }
+
+  private subscribePeerRosters(): void {
+    if (!this.mqtt) return;
+    const org = this.resolveOrgId();
+    const me = this.ensureIdentity();
+    for (const peer of this.readStore().peers) {
+      if (me && peer.deviceId === me.deviceId) continue;
+      this.mqtt.subscribe(rosterTopic(org, peer.deviceId));
+    }
   }
 
   private ensureDefaultPublish(store: PeersStore): void {
@@ -413,14 +451,6 @@ export class NetworkBridge {
       return out;
     } catch {
       return [];
-    }
-  }
-
-  private subscribePeerRosters(): void {
-    if (!this.mqtt) return;
-    const org = this.resolveOrgId();
-    for (const peer of this.readStore().peers) {
-      this.mqtt.subscribe(rosterTopic(org, peer.deviceId));
     }
   }
 
