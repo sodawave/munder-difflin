@@ -27,6 +27,9 @@ app/docs/media/*.mov
 .worktrees/
 app/.worktrees/
 
+# local reference clone of upstream OpenCode — not our product tree (runtime via package/binary)
+/opencode/
+
 # raw demo screen recordings — only the compressed app/docs/media/demo/*.mp4 are deployed
 app/docs/media/MunderDifflin*.mp4
 
